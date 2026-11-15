@@ -1,0 +1,57 @@
+---
+import { SITE } from '../config/site';
+
+const pathname = Astro.url.pathname;
+const navItems = [
+  { href: '/', label: '전체' },
+  { href: '/category/paper/', label: '논문 리뷰' },
+  { href: '/category/book/', label: '도서 노트' },
+  { href: '/category/insight/', label: '연구 단상' },
+  { href: '/about/', label: '소개' },
+];
+---
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="/">
+      <span class="brand-dot" aria-hidden="true"></span>
+      <span>{SITE.title}</span>
+    </a>
+
+    <nav class="nav-links" aria-label="주 메뉴">
+      {navItems.map((item) => {
+        const isActive =
+          item.href === '/'
+            ? pathname === '/'
+            : pathname.startsWith(item.href);
+        return (
+          <a href={item.href} aria-current={isActive ? 'page' : undefined}>
+            {item.label}
+          </a>
+        );
+      })}
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="테마 전환">
+        테마 전환
+      </button>
+    </nav>
+  </div>
+</header>
+
+<script is:inline>
+  (function () {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    function syncLabel() {
+      const current = document.documentElement.getAttribute('data-theme');
+      btn.textContent = current === 'dark' ? '라이트' : '다크';
+    }
+    syncLabel();
+    btn.addEventListener('click', function () {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      syncLabel();
+    });
+  })();
+</script>

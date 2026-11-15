@@ -1,0 +1,79 @@
+---
+interface SourceMeta {
+  title: string;
+  authors: string[];
+  year: number;
+  venueOrPublisher?: string;
+  url?: string;
+  doi?: string;
+  isbn?: string;
+}
+
+interface Props {
+  source: SourceMeta;
+  markdownPath: string;
+}
+
+const { source, markdownPath } = Astro.props;
+const firstAuthorLast = source.authors[0]?.split(' ').pop()?.toLowerCase() || 'source';
+const citeKey = `${firstAuthorLast.replace(/[^a-z0-9]/g, '')}${source.year}`;
+const bibtex = [
+  `@misc{${citeKey},`,
+  `  title={${source.title}},`,
+  `  author={${source.authors.join(' and ')}},`,
+  `  year={${source.year}},`,
+  source.venueOrPublisher ? `  howpublished={${source.venueOrPublisher}},` : null,
+  source.doi ? `  doi={${source.doi}},` : null,
+  source.url ? `  url={${source.url}},` : null,
+  `}`,
+]
+  .filter(Boolean)
+  .join('\n');
+---
+
+<section class="callout-box" aria-label="원문 서지 정보">
+  <h2>원문 및 서지 정보 (Primary Source)</h2>
+  <div class="citation-meta">
+    <div><strong>제목:</strong> {source.title}</div>
+    <div><strong>저자:</strong> {source.authors.join(', ')} ({source.year})</div>
+    {source.venueOrPublisher && (
+      <div><strong>학회/출판사:</strong> {source.venueOrPublisher}</div>
+    )}
+    {source.doi && <div><strong>DOI:</strong> {source.doi}</div>}
+    {source.isbn && <div><strong>ISBN:</strong> {source.isbn}</div>}
+  </div>
+
+  <div class="citation-actions">
+    {source.url && (
+      <a class="btn-secondary" href={source.url} target="_blank" rel="noopener noreferrer">
+        원문 보기 ↗
+      </a>
+    )}
+    <button
+      type="button"
+      class="btn-secondary copy-bibtex-btn"
+      data-bibtex={bibtex}
+    >
+      BibTeX 복사
+    </button>
+    <a class="btn-secondary" href={markdownPath}>
+      Markdown 원문 (.md)
+    </a>
+  </div>
+</section>
+
+<script is:inline>
+  document.querySelectorAll('.copy-bibtex-btn').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const text = btn.getAttribute('data-bibtex') || '';
+      try {
+        await navigator.clipboard.writeText(text);
+        const orig = btn.textContent;
+        btn.textContent = '복사됨 ✓';
+        setTimeout(() => (btn.textContent = orig), 1500);
+      } catch {
+        // Ignore clipboard errors
+      }
+    });
+  });
+</script>

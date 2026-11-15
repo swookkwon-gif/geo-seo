@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { SITE, type CategoryKey } from '../../config/site';
+import { buildBreadcrumbJsonLd } from '../../utils/jsonld';
+import { getPublishedPosts } from '../../utils/posts';
+
+export function getStaticPaths() {
+  return (Object.keys(SITE.categories) as CategoryKey[]).map((category) => ({
+    params: { category },
+  }));
+}
+
+const { category } = Astro.params as { category: CategoryKey };
+const categoryInfo = SITE.categories[category];
+const posts = (await getPublishedPosts()).filter((p) => p.data.category === category);
+const siteUrl = Astro.site?.toString() || SITE.url;
+const jsonLd = buildBreadcrumbJsonLd(
+  [
+    { name: '홈', url: '/' },
+    { name: categoryInfo.label, url: `/category/${category}/` },
+  ],
+  siteUrl
+);
+---
+
+<BaseLayout
+  title={categoryInfo.label}
+  description={categoryInfo.description}
+  jsonLd={jsonLd}
+>
+  <div class="container">
+    <section class="hero">
+      <span class="hero-eyebrow">Category Archive</span>
+      <h1>{categoryInfo.label}</h1>
+      <p>{categoryInfo.description}</p>
+    </section>
+
+    <div class="post-grid">
+      {posts.map((post) => <PostCard post={post} />)}
+    </div>
+  </div>
+</BaseLayout>

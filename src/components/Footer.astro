@@ -1,0 +1,19 @@
+---
+import { SITE } from '../config/site';
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div>
+      © {year} {SITE.title} · Built on Astro &amp; Cloudflare Workers
+    </div>
+    <div class="footer-links">
+      <a href="/llms.txt">llms.txt</a>
+      <a href="/llms-full.txt">llms-full.txt</a>
+      <a href="/rss.xml">RSS</a>
+      <a href="/sitemap-index.xml">Sitemap</a>
+      <a href="/robots.txt">robots.txt</a>
+    </div>
+  </div>
+</footer>

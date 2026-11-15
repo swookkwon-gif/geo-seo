@@ -1,0 +1,111 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import KeyTakeaways from '../../components/KeyTakeaways.astro';
+import CitationBox from '../../components/CitationBox.astro';
+import FaqSection from '../../components/FaqSection.astro';
+import TableOfContents from '../../components/TableOfContents.astro';
+import { SITE } from '../../config/site';
+import { buildPostJsonLd } from '../../utils/jsonld';
+import {
+  estimateReadingMinutes,
+  formatDateKo,
+  getPublishedPosts,
+  type PostEntry,
+} from '../../utils/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+interface Props {
+  post: PostEntry;
+}
+
+const { post } = Astro.props;
+const { data } = post;
+const { Content, headings } = await render(post);
+
+const siteUrl = Astro.site?.toString() || SITE.url;
+const categoryLabel = SITE.categories[data.category].label;
+const readingMinutes = estimateReadingMinutes(post.body);
+const markdownPath = `/posts/${post.id}.md`;
+const jsonLd = buildPostJsonLd(post, siteUrl);
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  ogType="article"
+  publishedTime={data.publishedAt.toISOString()}
+  modifiedTime={(data.updatedAt || data.publishedAt).toISOString()}
+  markdownAlternatePath={markdownPath}
+  jsonLd={jsonLd}
+>
+  <article class="container-narrow">
+    <nav class="breadcrumb" aria-label="경로">
+      <a href="/">홈</a>
+      <span aria-hidden="true">/</span>
+      <a href={`/category/${data.category}/`}>{categoryLabel}</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{data.title}</span>
+    </nav>
+
+    <header class="article-header">
+      <span class={`badge badge-${data.category}`}>{categoryLabel}</span>
+      <h1>{data.title}</h1>
+      <div class="article-meta">
+        <span>작성: {SITE.author.name}</span>
+        <span>
+          발행:{' '}
+          <time datetime={data.publishedAt.toISOString()}>
+            {formatDateKo(data.publishedAt)}
+          </time>
+        </span>
+        {data.updatedAt && (
+          <span>
+            수정:{' '}
+            <time datetime={data.updatedAt.toISOString()}>
+              {formatDateKo(data.updatedAt)}
+            </time>
+          </span>
+        )}
+        <span>약 {readingMinutes}분 읽기</span>
+        <a href={markdownPath}>Markdown (.md)</a>
+      </div>
+
+      {data.tags.length > 0 && (
+        <ul class="tag-list" style="margin-top: 0.9rem;" aria-label="태그">
+          {data.tags.map((tag) => (
+            <li>
+              <a class="tag" href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </header>
+
+    {data.tldr && (
+      <section class="tldr-box" aria-label="핵심 결론">
+        <div class="tldr-label">TL;DR</div>
+        <p>{data.tldr}</p>
+      </section>
+    )}
+
+    <KeyTakeaways items={data.keyTakeaways} />
+
+    {data.source && <CitationBox source={data.source} markdownPath={markdownPath} />}
+
+    <TableOfContents headings={headings} />
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <FaqSection items={data.faq} />
+  </article>
+</BaseLayout>

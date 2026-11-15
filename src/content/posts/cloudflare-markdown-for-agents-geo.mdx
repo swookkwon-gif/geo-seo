@@ -1,0 +1,44 @@
+---
+title: "Cloudflare 기반 AI 크롤러 아키텍처: Markdown for Agents와 llms.txt 실전 설계"
+description: "HTML 대비 4~5배의 토큰을 낭비하는 기존 웹 구조를 개선하기 위해 Cloudflare가 제안한 Markdown for Agents, Accept: text/markdown 협상, llms.txt, Content-Signal 헤더를 분석하고 블로그에 구현한 과정을 정리합니다."
+category: "insight"
+publishedAt: "2026-11-12"
+tags: ["Cloudflare", "llms.txt", "MarkdownForAgents", "GEO아키텍처", "Workers"]
+featured: true
+tldr: "AI 에이전트에게 HTML 대신 정적 Markdown(.md)과 llms.txt를 제공하면 페이로드와 토큰 소비를 대폭 줄여 크롤링·RAG 색인 정확도를 높일 수 있으며, Cloudflare Worker의 Accept 헤더 콘텐츠 협상으로 이를 자동화할 수 있다."
+keyTakeaways:
+  - "일반 HTML 페이지는 내비게이션·스타일·스크립트 마크업으로 인해 순수 텍스트 대비 LLM 컨텍스트 토큰을 4~5배 더 소비한다."
+  - "일부 상용 AI 크롤러는 아직 HTTP Accept: text/markdown 협상을 기본 전송하지 않으므로, 콘텐츠 협상(Worker)과 정적 .md URL 및 llms.txt 노출을 병행해야 한다."
+  - "Cloudflare의 Content-Signal 헤더(ai-train, search, ai-input)를 통해 검색 인용은 허용하면서 정책 의도를 명확히 전달할 수 있다."
+faq:
+  - question: "llms.txt와 sitemap.xml은 역할이 어떻게 다른가요?"
+    answer: "sitemap.xml은 검색엔진 크롤러에게 전체 URL 목록과 갱신 주기를 알리는 XML 인덱스입니다. 반면 llms.txt는 LLM과 AI 에이전트가 사이트의 핵심 주제와 구조화된 Markdown 문서(.md)를 최소한의 토큰으로 빠르게 탐색할 수 있도록 설계된 Markdown 기반 디렉터리입니다."
+  - question: "Cloudflare Pages 대신 Workers Static Assets를 선택한 이유는 무엇인가요?"
+    answer: "정적 파일 서빙의 무중단·초저지연 장점을 그대로 유지하면서도, 요청 헤더(Accept: text/markdown)를 검사해 동일 URL에서 Markdown 본문을 동적으로 반환하는 엣지 콘텐츠 협상 로직을 Worker 엔트리포인트에 결합할 수 있기 때문입니다."
+---
+
+웹 문서는 본래 사람의 시각적 탐색을 위해 설계되었다. 하지만 생성형 AI 검색과 코딩·리서치 에이전트가 웹 트래픽의 주요 소비자로 부상하면서, HTML에 포함된 내비게이션·레이아웃·스크립트 마크업은 기계 독해의 정확도를 떨어뜨리고 **컨텍스트 토큰을 4~5배 이상 낭비**하는 병목이 되었다([InfoQ, Markdown for Agents](https://www.infoq.com/)).
+
+이 블로그는 이러한 비효율을 제거하기 위해 Cloudflare의 **Markdown for Agents** 패턴과 **llms.txt** 표준을 정적 사이트 아키텍처에 결합했다.
+
+## 1. 이중 서빙 전략: 콘텐츠 협상과 정적 `.md` 병행
+
+Cloudflare가 제시한 엣지 최적화 패턴의 핵심은 동일한 리소스에 대해 **사람에게는 HTML을, 에이전트에게는 Markdown을 제공**하는 것이다.
+
+1. **HTTP 콘텐츠 협상 (`Accept: text/markdown`):**
+   Cloudflare Worker(`src/worker.ts`)가 `/posts/<slug>` 요청의 `Accept` 헤더를 확인해 `text/markdown`이 포함되어 있으면, 빌드 타임에 생성해 둔 정적 `/posts/<slug>.md` 파일을 `Content-Type: text/markdown; charset=utf-8` 및 `Vary: Accept` 헤더와 함께 반환한다.
+2. **명시적 `.md` 엔드포인트와 `<link rel="alternate">`:**
+   실제 운영 로그를 보면 모든 상용 AI 크롤러가 아직 `Accept: text/markdown` 헤더를 일관되게 보내지는 않는다. 이를 보완하기 위해 모든 글의 `<head>`에 `<link rel="alternate" type="text/markdown" href="/posts/<slug>.md" />`를 선언하고, 본문 상단에도 직접 접근 링크를 제공한다.
+
+## 2. `llms.txt`와 `llms-full.txt`의 역할 분담
+
+개별 페이지 단위의 Markdown 변환이 미시적 최적화라면, 도메인 단위의 거시적 디스커버리는 `llms.txt` 규약이 담당한다.
+
+- **`/llms.txt`:** 사이트의 연구 범위와 카테고리(논문 리뷰, 도서 노트, 연구 단상)별 `.md` 링크를 요약한 경량 인덱스다. 에이전트가 전체 사이트 구조를 파악한 뒤 필요한 문서만 선별적으로 가져갈 수 있게 한다.
+- **`/llms-full.txt`:** 발행된 모든 연구 노트의 본문과 메타데이터를 단일 Markdown 파일로 결합한 전체 코퍼스다. 대용량 컨텍스트 윈도우를 가진 모델이나 외부 RAG 파이프라인이 수십 번의 HTTP 왕복 없이 연구 아카이브 전체를 일괄 색인할 때 유리하다.
+
+## 3. 크롤러 거버넌스: `robots.txt`와 `Content-Signal`
+
+트래픽 최대화가 목표인 연구 블로그에서는 검색 인덱스 봇과 실시간 답변(Search-time Retrieval) 봇을 명확히 환영해야 한다. `robots.txt`에는 전통적인 검색 크롤러(`Googlebot`, `Yeti`, `bingbot`)와 함께 주요 AI 검색 크롤러(`OAI-SearchBot`, `ChatGPT-User`, `Claude-SearchBot`, `PerplexityBot`, `Google-Extended`)의 접근을 명시적으로 허용했다.
+
+동시에 Cloudflare 응답 헤더에 `Content-Signal: ai-train=yes, search=yes, ai-input=yes`를 부여해, 검색과 AI 추론 입력 모두에 대해 기계 판독 가능한(Machine-readable) 허용 신호를 전달하도록 구성했다.

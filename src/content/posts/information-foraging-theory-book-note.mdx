@@ -1,0 +1,45 @@
+---
+title: "[도서 노트] Information Foraging Theory — LLM 에이전트 시대의 정보 냄새(Information Scent)"
+description: "Peter Pirolli의 'Information Foraging Theory'(2007)가 제시한 정보 채집 이론과 '정보 냄새(Information Scent)' 개념을 현대 RAG 파이프라인과 GEO 콘텐츠 설계 관점에서 재해석합니다."
+category: "book"
+publishedAt: "2026-11-14"
+tags: ["정보채집이론", "InformationForaging", "RAG", "콘텐츠구조", "도서노트"]
+featured: false
+tldr: "사용자가 제한된 인지 비용 안에서 '정보 냄새'가 가장 강한 링크를 따라 이동하듯, LLM 기반 검색 에이전트 역시 최소한의 토큰 비용으로 높은 정보 이득(Information Gain)을 얻을 수 있는 구조화된 단서(제목·요약·표·인용)를 우선 선택한다."
+keyTakeaways:
+  - "정보 채집 이론(IFT)은 인간이 시간당 정보 이득을 극대화하기 위해 '정보 패치(Patch)' 간 이동 비용과 체류 가치를 본능적으로 계산한다고 설명한다."
+  - "정보 냄새(Information Scent)란 링크 텍스트, 제목, 요약문 같은 근거리 단서(Proximal Cues)를 통해 원거리 정보원의 가치를 예측하는 신호다."
+  - "GEO 관점에서 명확한 H2/H3 계층, TL;DR, 비교표는 인간 독자뿐 아니라 청크(Chunk) 단위로 문서를 평가하는 RAG 리트리버의 '정보 냄새'를 강화한다."
+source:
+  title: "Information Foraging Theory: Adaptive Interaction with Information"
+  authors:
+    - "Peter Pirolli"
+  year: 2007
+  venueOrPublisher: "Oxford University Press"
+  isbn: "978-0195173321"
+faq:
+  - question: "2007년에 출간된 인지과학 서적이 왜 최신 GEO 연구와 관련이 있나요?"
+    answer: "GEO의 핵심은 AI 검색엔진의 검색기(Retriever)와 독자가 제한된 예산(시간 또는 토큰) 안에서 어떤 문서를 선택하고 인용할지 결정하는 메커니즘을 이해하는 것입니다. Pirolli의 정보 냄새 모델은 제목·스니펫·문단 구조가 선택 확률에 미치는 영향을 설명하는 견고한 이론적 틀을 제공합니다."
+---
+
+검색 최적화를 기술적 트릭의 모음으로만 접근하면 알고리즘이 바뀔 때마다 전략이 무너진다. 검색 시스템이 인간이든 AI 에이전트든 결국 **제한된 자원(시간, 주의력, 연산 토큰) 안에서 최적의 정보를 탐색하는 문제**를 풀기 때문이다. Peter Pirolli의 저서 *Information Foraging Theory*(Oxford University Press, 2007)는 생태학의 최적 채집 이론(Optimal Foraging Theory)을 인간의 정보 탐색 행동에 이식해 이 본질을 설명한다.
+
+## 1. 정보 패치(Information Patch)와 탐색 비용
+
+자연계의 포식자가 먹이가 풍부한 사냥터(Patch)에 머무를지, 이동 비용을 감수하고 다른 곳으로 떠날지를 계산하듯, 정보 탐색자 역시 **단위 시간당 정보 이득(Rate of Information Gain)**을 극대화하는 방향으로 움직인다.
+
+웹 문서 하나가 하나의 '정보 패치'라면, 문서 도입부가 장황하고 결론을 뒤로 숨기는 글은 탐색자에게 높은 인지 비용을 부과한다. 인간 독자는 즉시 뒤로 가기(Bounce)를 누르고, LLM 리트리버는 임베딩 유사도나 리랭킹(Reranking) 점수에서 해당 청크를 탈락시킨다.
+
+## 2. 정보 냄새(Information Scent)의 현대적 재해석
+
+책에서 가장 핵심적인 개념은 **정보 냄새(Information Scent)**다. 탐색자는 목적지 페이지 전체를 읽기 전에 링크 앵커 텍스트, 제목, 메타 설명, 소제목 같은 **근거리 단서(Proximal Cues)**를 통해 그 너머에 원하는 답이 있을 확률을 추정한다.
+
+이 원리는 현대 RAG(Retrieval-Augmented Generation) 및 AI 검색 파이프라인에 그대로 적용된다.
+
+- **제목과 첫 문단(TL;DR):** 검색 단계에서 상위 후보군으로 선별되는 1차 냄새 역할을 한다. 모호한 은유적 제목보다 질문의 핵심 개체(Entity)와 결론이 드러나는 제목이 유리하다.
+- **시맨틱 소제목(`<h2>`, `<h3>`):** 문서를 의미 단위 청크(Chunk)로 분할할 때 각 청크가 독립적인 문맥을 유지하도록 경계를 잡아준다.
+- **표와 불릿 리스트:** 긴 서술형 문단 속에 묻힌 비교 수치보다 구조화된 표와 핵심 명제 리스트가 정보 추출 밀도를 높인다.
+
+## 3. 정리: 기계와 인간을 동시에 설득하는 문서 설계
+
+결국 좋은 GEO 문서는 기계를 속이기 위한 인위적 포맷이 아니라, **정보 냄새가 선명하고 탐색 비용이 낮은 문서**다. 핵심 결론을 전면에 배치하고, 근거와 데이터를 분리 가능한 구조로 제시하는 방식은 2007년 인지과학이 규명한 인간의 정보 채집 본능과 2026년 LLM 에이전트의 토큰 효율성 요구를 동시에 충족한다.
