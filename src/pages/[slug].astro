@@ -1,18 +1,16 @@
 ---
 import { render } from 'astro:content';
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import KeyTakeaways from '../../components/KeyTakeaways.astro';
-import CitationBox from '../../components/CitationBox.astro';
-import FaqSection from '../../components/FaqSection.astro';
-import TableOfContents from '../../components/TableOfContents.astro';
-import { SITE } from '../../config/site';
-import { buildPostJsonLd } from '../../utils/jsonld';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CitationBox from '../components/CitationBox.astro';
+import FaqSection from '../components/FaqSection.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import { SITE } from '../config/site';
+import { buildPostJsonLd } from '../utils/jsonld';
 import {
-  estimateReadingMinutes,
   formatDateKo,
   getPublishedPosts,
   type PostEntry,
-} from '../../utils/posts';
+} from '../utils/posts';
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
@@ -32,8 +30,7 @@ const { Content, headings } = await render(post);
 
 const siteUrl = Astro.site?.toString() || SITE.url;
 const categoryLabel = SITE.categories[data.category].label;
-const readingMinutes = estimateReadingMinutes(post.body);
-const markdownPath = `/posts/${post.id}.md`;
+const markdownPath = `/${post.id}.md`;
 const jsonLd = buildPostJsonLd(post, siteUrl);
 ---
 
@@ -50,7 +47,7 @@ const jsonLd = buildPostJsonLd(post, siteUrl);
     <nav class="breadcrumb" aria-label="경로">
       <a href="/">홈</a>
       <span aria-hidden="true">/</span>
-      <a href={`/category/${data.category}/`}>{categoryLabel}</a>
+      <a href={`/${data.category}/`}>{categoryLabel}</a>
       <span aria-hidden="true">/</span>
       <span aria-current="page">{data.title}</span>
     </nav>
@@ -74,19 +71,8 @@ const jsonLd = buildPostJsonLd(post, siteUrl);
             </time>
           </span>
         )}
-        <span>약 {readingMinutes}분 읽기</span>
         <a href={markdownPath}>Markdown (.md)</a>
       </div>
-
-      {data.tags.length > 0 && (
-        <ul class="tag-list" style="margin-top: 0.9rem;" aria-label="태그">
-          {data.tags.map((tag) => (
-            <li>
-              <a class="tag" href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>
-            </li>
-          ))}
-        </ul>
-      )}
     </header>
 
     {data.tldr && (
@@ -96,9 +82,7 @@ const jsonLd = buildPostJsonLd(post, siteUrl);
       </section>
     )}
 
-    <KeyTakeaways items={data.keyTakeaways} />
-
-    {data.source && <CitationBox source={data.source} markdownPath={markdownPath} />}
+    {data.source && <CitationBox source={data.source} />}
 
     <TableOfContents headings={headings} />
 

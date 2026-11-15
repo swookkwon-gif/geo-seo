@@ -39,7 +39,7 @@ export function stripMdxImports(body: string | undefined): string {
 export function buildPostMarkdown(post: PostEntry, siteUrl: string): string {
   const { data } = post;
   const categoryLabel = SITE.categories[data.category].label;
-  const canonicalUrl = new URL(`/posts/${post.id}/`, siteUrl).toString();
+  const canonicalUrl = new URL(`/${post.id}/`, siteUrl).toString();
   const lines: string[] = [
     `# ${data.title}`,
     '',

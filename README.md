@@ -1,4 +1,4 @@
-# geo-seo — Cloudflare 기반 SEO·GEO 연구 블로그
+# GEO-SEO — Cloudflare 기반 SEO·GEO 연구 블로그
 
 **Astro + Cloudflare Workers Static Assets** 기반으로 구축된 생성형 엔진 최적화(GEO) 및 검색 아키텍처 연구 블로그입니다.
 
@@ -60,4 +60,5 @@ faq: # 선택사항 (FAQPage JSON-LD 자동 생성)
    npx wrangler login
    npm run deploy
    ```
-3. 배포 후 **Google Search Console**, **네이버 서치어드바이저**, **Bing Webmaster Tools**에 `/sitemap-index.xml`과 `/rss.xml`을 제출하세요.
+3. **향후 계획 (글이 일정 수 이상 누적된 후 진행):**
+   - **Google Search Console**, **네이버 서치어드바이저**, **Bing Webmaster Tools**에 `/sitemap-index.xml`과 `/rss.xml`을 제출합니다.

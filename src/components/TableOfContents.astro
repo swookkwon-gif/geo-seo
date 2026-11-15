@@ -9,7 +9,7 @@ const { headings } = Astro.props;
 const tocHeadings = headings.filter((h) => h.depth === 2 || h.depth === 3);
 ---
 
-{tocHeadings.length >= 2 && (
+{tocHeadings.length >= 4 && (
   <nav class="toc" aria-label="목차">
     <div class="toc-title">목차</div>
     <ul>

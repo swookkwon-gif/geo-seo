@@ -16,7 +16,7 @@
   Cache-Control: public, max-age=3600
   Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
-/posts/*.md
+/*.md
   Content-Type: text/markdown; charset=utf-8
   Cache-Control: public, max-age=3600
   Content-Signal: ai-train=yes, search=yes, ai-input=yes

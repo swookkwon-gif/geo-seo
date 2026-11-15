@@ -24,7 +24,7 @@ const posts = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    category: z.enum(['paper', 'book', 'insight']),
+    category: z.enum(['paper', 'book', 'research', 'AI']),
     publishedAt: z.coerce.date(),
     updatedAt: z.coerce.date().optional(),
     tags: z.array(z.string()).default([]),

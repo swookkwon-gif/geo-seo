@@ -1,6 +1,6 @@
 ---
 import { SITE } from '../config/site';
-import { estimateReadingMinutes, formatDateKo, type PostEntry } from '../utils/posts';
+import { formatDateKo, type PostEntry } from '../utils/posts';
 
 interface Props {
   post: PostEntry;
@@ -9,7 +9,6 @@ interface Props {
 const { post } = Astro.props;
 const { data } = post;
 const categoryLabel = SITE.categories[data.category].label;
-const readingMinutes = estimateReadingMinutes(post.body);
 ---
 
 <article
@@ -19,27 +18,14 @@ const readingMinutes = estimateReadingMinutes(post.body);
 >
   <div class="post-card-meta">
     <span class={`badge badge-${data.category}`}>{categoryLabel}</span>
-    <span>
-      <time datetime={data.publishedAt.toISOString()}>
-        {formatDateKo(data.publishedAt)}
-      </time>
-      · {readingMinutes}분 읽기
-    </span>
+    <time datetime={data.publishedAt.toISOString()}>
+      {formatDateKo(data.publishedAt)}
+    </time>
   </div>
 
   <h2>
-    <a href={`/posts/${post.id}/`}>{data.title}</a>
+    <a href={`/${post.id}/`}>{data.title}</a>
   </h2>
 
   <p class="post-card-desc">{data.tldr || data.description}</p>
-
-  {data.tags.length > 0 && (
-    <ul class="tag-list" aria-label="태그">
-      {data.tags.slice(0, 4).map((tag) => (
-        <li>
-          <a class="tag" href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>
-        </li>
-      ))}
-    </ul>
-  )}
 </article>

@@ -11,10 +11,9 @@ interface SourceMeta {
 
 interface Props {
   source: SourceMeta;
-  markdownPath: string;
 }
 
-const { source, markdownPath } = Astro.props;
+const { source } = Astro.props;
 const firstAuthorLast = source.authors[0]?.split(' ').pop()?.toLowerCase() || 'source';
 const citeKey = `${firstAuthorLast.replace(/[^a-z0-9]/g, '')}${source.year}`;
 const bibtex = [
@@ -56,9 +55,6 @@ const bibtex = [
     >
       BibTeX 복사
     </button>
-    <a class="btn-secondary" href={markdownPath}>
-      Markdown 원문 (.md)
-    </a>
   </div>
 </section>
 

@@ -1,5 +1,5 @@
 export const SITE = {
-  title: 'geo-seo',
+  title: 'GEO-SEO',
   subtitle: 'Generative Engine Optimization · 논문 · 도서 · 아키텍처 노트',
   description:
     '생성형 AI 검색(GEO)과 차세대 검색 최적화(SEO)에 관한 학술 논문, 핵심 도서, 그리고 실무 연구 노트를 기록하는 아카이브입니다.',
@@ -19,16 +19,20 @@ export const SITE = {
   cloudflareAnalyticsToken: '',
   categories: {
     paper: {
-      label: '논문 리뷰',
+      label: '논문',
       description: 'GEO, RAG, 정보검색(IR) 관련 학술 논문의 핵심 가설, 실험 설계, 인용 전략 분석',
     },
     book: {
-      label: '도서 노트',
+      label: '책 리뷰',
       description: '검색, AI, 지식 그래프, 콘텐츠 전략 관련 도서의 핵심 통찰과 실무 적용점',
     },
-    insight: {
-      label: '연구 단상',
+    research: {
+      label: '연구',
       description: 'Cloudflare 엣지 아키텍처, 크롤러 거버넌스, 실전 GEO/SEO 실험 기록',
+    },
+    AI: {
+      label: 'AI & Tech',
+      description: '생성형 AI 모델, 에이전트 아키텍처, 웹 기술 동향 분석',
     },
   },
 } as const;

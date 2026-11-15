@@ -18,79 +18,8 @@ const jsonLd = buildWebSiteJsonLd(siteUrl);
       <p>{SITE.description}</p>
     </section>
 
-    <div class="filter-bar">
-      <div class="category-tabs" role="tablist" aria-label="카테고리 필터">
-        <button class="category-tab active" type="button" data-filter="all">
-          전체 ({posts.length})
-        </button>
-        <button class="category-tab" type="button" data-filter="paper">
-          논문 리뷰 ({posts.filter((p) => p.data.category === 'paper').length})
-        </button>
-        <button class="category-tab" type="button" data-filter="book">
-          도서 노트 ({posts.filter((p) => p.data.category === 'book').length})
-        </button>
-        <button class="category-tab" type="button" data-filter="insight">
-          연구 단상 ({posts.filter((p) => p.data.category === 'insight').length})
-        </button>
-      </div>
-
-      <input
-        id="post-search"
-        class="search-input"
-        type="search"
-        placeholder="제목, 키워드, 태그 검색..."
-        aria-label="글 검색"
-      />
-    </div>
-
     <div class="post-grid" id="post-grid">
       {posts.map((post) => <PostCard post={post} />)}
     </div>
-
-    <p id="empty-state" style="display:none; color: var(--text-muted); margin-top: 2rem;">
-      조건에 일치하는 연구 노트가 없습니다.
-    </p>
   </div>
 </BaseLayout>
-
-<script is:inline>
-  (function () {
-    const tabs = document.querySelectorAll('.category-tab');
-    const searchInput = document.getElementById('post-search');
-    const cards = Array.from(document.querySelectorAll('.post-card'));
-    const emptyState = document.getElementById('empty-state');
-    let activeCategory = 'all';
-
-    function applyFilter() {
-      const q = (searchInput && searchInput.value ? searchInput.value : '').trim().toLowerCase();
-      let visible = 0;
-
-      cards.forEach(function (card) {
-        const cat = card.getAttribute('data-category');
-        const text = card.getAttribute('data-search') || '';
-        const matchCat = activeCategory === 'all' || cat === activeCategory;
-        const matchQuery = !q || text.includes(q);
-        const show = matchCat && matchQuery;
-        card.style.display = show ? 'flex' : 'none';
-        if (show) visible++;
-      });
-
-      if (emptyState) {
-        emptyState.style.display = visible === 0 ? 'block' : 'none';
-      }
-    }
-
-    tabs.forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        tabs.forEach((t) => t.classList.remove('active'));
-        tab.classList.add('active');
-        activeCategory = tab.getAttribute('data-filter') || 'all';
-        applyFilter();
-      });
-    });
-
-    if (searchInput) {
-      searchInput.addEventListener('input', applyFilter);
-    }
-  })();
-</script>

@@ -9,7 +9,8 @@ export const GET: APIRoute = async ({ site }) => {
   const grouped = {
     paper: posts.filter((p) => p.data.category === 'paper'),
     book: posts.filter((p) => p.data.category === 'book'),
-    insight: posts.filter((p) => p.data.category === 'insight'),
+    research: posts.filter((p) => p.data.category === 'research'),
+    AI: posts.filter((p) => p.data.category === 'AI'),
   };
 
   const lines: string[] = [
@@ -31,7 +32,7 @@ export const GET: APIRoute = async ({ site }) => {
     const catInfo = SITE.categories[cat];
     lines.push(`## ${catInfo.label} (${cat})`, '', catInfo.description, '');
     for (const post of items) {
-      const mdUrl = new URL(`/posts/${post.id}.md`, siteUrl).toString();
+      const mdUrl = new URL(`/${post.id}.md`, siteUrl).toString();
       const summary = post.data.tldr || post.data.description;
       lines.push(`- [${post.data.title}](${mdUrl}): ${summary}`);
     }

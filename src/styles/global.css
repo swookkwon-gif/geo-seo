@@ -14,36 +14,16 @@
   --badge-paper-text: #3730a3;
   --badge-book-bg: #ecfdf5;
   --badge-book-text: #065f46;
-  --badge-insight-bg: #fff7ed;
-  --badge-insight-text: #9a3412;
+  --badge-research-bg: #fff7ed;
+  --badge-research-text: #9a3412;
+  --badge-AI-bg: #f3e8ff;
+  --badge-AI-text: #6b21a8;
   --code-bg: #f6f8fa;
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
   --radius: 10px;
   --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
     'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-html[data-theme='dark'] {
-  --bg: #0b0f17;
-  --bg-elevated: #111827;
-  --bg-subtle: #182234;
-  --text: #f3f4f6;
-  --text-muted: #9ca3af;
-  --text-faint: #6b7280;
-  --border: #1f2937;
-  --border-strong: #374151;
-  --accent: #60a5fa;
-  --accent-soft: rgba(59, 130, 246, 0.14);
-  --accent-text: #93c5fd;
-  --badge-paper-bg: rgba(99, 102, 241, 0.18);
-  --badge-paper-text: #a5b4fc;
-  --badge-book-bg: rgba(16, 185, 129, 0.18);
-  --badge-book-text: #6ee7b7;
-  --badge-insight-bg: rgba(249, 115, 22, 0.18);
-  --badge-insight-text: #fdba74;
-  --code-bg: #161b22;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 *,
@@ -196,9 +176,14 @@ main {
   color: var(--badge-book-text);
 }
 
-.badge-insight {
-  background: var(--badge-insight-bg);
-  color: var(--badge-insight-text);
+.badge-research {
+  background: var(--badge-research-bg);
+  color: var(--badge-research-text);
+}
+
+.badge-AI {
+  background: var(--badge-AI-bg);
+  color: var(--badge-AI-text);
 }
 
 .tag-list {

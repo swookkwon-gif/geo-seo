@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ site }) => {
       title: post.data.title,
       pubDate: post.data.publishedAt,
       description: post.data.tldr || post.data.description,
-      link: `/posts/${post.id}/`,
+      link: `/${post.id}/`,
       categories: [SITE.categories[post.data.category].label, ...post.data.tags],
     })),
     customData: `<language>ko-kr</language>`,

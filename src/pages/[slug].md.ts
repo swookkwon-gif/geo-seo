@@ -1,6 +1,6 @@
 import type { APIRoute, GetStaticPaths } from 'astro';
-import { SITE } from '../../config/site';
-import { buildPostMarkdown, getPublishedPosts, type PostEntry } from '../../utils/posts';
+import { SITE } from '../config/site';
+import { buildPostMarkdown, getPublishedPosts, type PostEntry } from '../utils/posts';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const posts = await getPublishedPosts();

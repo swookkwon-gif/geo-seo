@@ -45,7 +45,7 @@ export function buildBreadcrumbJsonLd(
 
 export function buildPostJsonLd(post: PostEntry, siteUrl: string) {
   const { data } = post;
-  const postUrl = new URL(`/posts/${post.id}/`, siteUrl).toString();
+  const postUrl = new URL(`/${post.id}/`, siteUrl).toString();
   const categoryLabel = SITE.categories[data.category].label;
   const author = buildPersonJsonLd(siteUrl);
 
@@ -107,8 +107,8 @@ export function buildPostJsonLd(post: PostEntry, siteUrl: string) {
     buildBreadcrumbJsonLd(
       [
         { name: '홈', url: '/' },
-        { name: categoryLabel, url: `/category/${data.category}/` },
-        { name: data.title, url: `/posts/${post.id}/` },
+        { name: categoryLabel, url: `/${data.category}/` },
+        { name: data.title, url: `/${post.id}/` },
       ],
       siteUrl
     )
