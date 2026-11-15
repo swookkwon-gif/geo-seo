@@ -1,5 +1,5 @@
 export const SITE = {
-  title: 'geo-seo-research',
+  title: 'geo-seo',
   subtitle: 'Generative Engine Optimization · 논문 · 도서 · 아키텍처 노트',
   description:
     '생성형 AI 검색(GEO)과 차세대 검색 최적화(SEO)에 관한 학술 논문, 핵심 도서, 그리고 실무 연구 노트를 기록하는 아카이브입니다.',

@@ -1,4 +1,4 @@
-# geo-seo-research — Cloudflare 기반 SEO·GEO 연구 블로그
+# geo-seo — Cloudflare 기반 SEO·GEO 연구 블로그
 
 **Astro + Cloudflare Workers Static Assets** 기반으로 구축된 생성형 엔진 최적화(GEO) 및 검색 아키텍처 연구 블로그입니다.
 
