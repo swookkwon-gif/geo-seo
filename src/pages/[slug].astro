@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import KeyTakeaways from '../components/KeyTakeaways.astro';
 import CitationBox from '../components/CitationBox.astro';
 import FaqSection from '../components/FaqSection.astro';
 import TableOfContents from '../components/TableOfContents.astro';
@@ -75,12 +76,7 @@ const jsonLd = buildPostJsonLd(post, siteUrl);
       </div>
     </header>
 
-    {data.tldr && (
-      <section class="tldr-box" aria-label="핵심 결론">
-        <div class="tldr-label">TL;DR</div>
-        <p>{data.tldr}</p>
-      </section>
-    )}
+    <KeyTakeaways items={data.keyTakeaways} />
 
     {data.source && <CitationBox source={data.source} />}
 

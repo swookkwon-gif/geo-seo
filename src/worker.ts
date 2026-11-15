@@ -8,7 +8,7 @@ interface Env {
 
 const CONTENT_SIGNAL = 'ai-train=yes, search=yes, ai-input=yes';
 
-const RESERVED_PATHS = new Set(['/', '/about', '/paper', '/book', '/research', '/AI', '/404']);
+const RESERVED_PATHS = new Set(['/', '/paper', '/book', '/research', '/AI', '/404']);
 
 function isPostPath(pathname: string): boolean {
   const normalized = pathname.replace(/\/+$/, '') || '/';

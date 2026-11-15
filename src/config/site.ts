@@ -10,7 +10,7 @@ export const SITE = {
     name: 'Wook',
     role: 'GEO & Search Architecture Researcher',
     bio: '생성형 AI 검색엔진의 인용 메커니즘, 시맨틱 웹 아키텍처, Cloudflare 엣지 기반 콘텐츠 최적화(GEO/SEO)를 연구합니다.',
-    url: '/about',
+    url: '/',
     sameAs: [
       // 추후 GitHub, X(Twitter), LinkedIn, Google Scholar URL을 추가하세요.
     ] as string[],
