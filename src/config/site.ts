@@ -3,7 +3,7 @@ export const SITE = {
   subtitle: 'Generative Engine Optimization · 논문 · 도서 · 아키텍처 노트',
   description:
     '생성형 AI 검색(GEO)과 차세대 검색 최적화(SEO)에 관한 학술 논문, 핵심 도서, 그리고 실무 연구 노트를 기록하는 아카이브입니다.',
-  url: import.meta.env.SITE_URL || 'https://geo-research.example.com',
+  url: import.meta.env.SITE_URL || 'https://geo-seo.swookkwon.workers.dev',
   lang: 'ko-KR',
   locale: 'ko_KR',
   author: {
