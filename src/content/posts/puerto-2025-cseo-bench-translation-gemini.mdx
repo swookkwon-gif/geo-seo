@@ -1,0 +1,140 @@
+---
+title: "[원문 번역 · Gemini] C-SEO Bench: Does Conversational SEO Work? (Puerto et al., NeurIPS '25)"
+description: "Haritz Puerto, Martin Gubri, Tommaso Green, Seong Joon Oh, Sangdoo Yun(NeurIPS 2025)의 'C-SEO Bench: Does Conversational SEO Work?'(arXiv:2506.11097v3) 원문 본문(1~7장, Table 1–5 및 핵심 실험 결과)을 한국어로 번역·정리했습니다. (Gemini 작성 버전)"
+category: "paper"
+publishedAt: "2026-11-25"
+tags: ["GEO", "C-SEO", "NeurIPS2025", "원문번역", "Gemini"]
+tldr: "2개 태스크(상품 추천·질의응답), 6개 도메인, 다중 경쟁 행위자를 포괄하는 C-SEO Bench에서 10개 화이트햇 C-SEO 기법을 평가한 결과, 기존 C-SEO 기법은 대부분 무효하거나 오히려 순위를 떨어뜨렸으며, LLM 컨텍스트 내 문서 순위를 높이는 전통 SEO가 압도적으로 큰 효과를 보였다."
+keyTakeaways:
+  - "54개 평가 조합 중 통계적으로 유의한 순위 상승을 낸 경우는 단 3건(LLM Guidance 2건, Content Improvement 1건)에 불과했고, Statistics 기법은 24개 설정 중 19개에서 순위를 유의하게 하락시켰다."
+  - "LLM 컨텍스트 1순위에 문서를 배치하는 전통적 SEO(Best SEO)는 gpt-4o-mini 기준 Retail +2.77, Games +1.89, Books +1.60, Debate +1.54 등 모든 C-SEO 기법을 압도했다."
+  - "채택률(Adoption Rate)이 10%에서 100%로 늘어날수록 참여자당 평균 순위 이득이 0으로 수렴하는 혼잡한 제로섬 게임(Congested Zero-Sum Game) 특성이 실증되었다."
+  - "결론적으로 C-SEO(GEO)는 전통적 SEO를 대체하지 못하며, SEO를 보완하는 전략으로 접근해야 한다."
+source:
+  title: "C-SEO Bench: Does Conversational SEO Work?"
+  authors:
+    - "Haritz Puerto"
+    - "Martin Gubri"
+    - "Tommaso Green"
+    - "Seong Joon Oh"
+    - "Sangdoo Yun"
+  year: 2025
+  venueOrPublisher: "39th Conference on Neural Information Processing Systems (NeurIPS 2025)"
+  url: "https://arxiv.org/abs/2506.11097"
+featured: false
+draft: false
+---
+
+> **비교 안내:** 본 포스트는 Puerto et al. (NeurIPS 2025) 원문의 **Gemini 번역 버전**입니다.
+> - **BAZE(`gpt-6.2-sol`) 전 문장 완역 비교 버전:** [[원문 완역 · BAZE] C-SEO Bench: Does Conversational SEO Work?](/puerto-2025-cseo-bench-translation-baze/)
+> - **공식 코드 및 데이터셋:** [GitHub (parameterlab/c-seo-bench)](https://github.com/parameterlab/c-seo-bench) · [HuggingFace](https://huggingface.co/datasets/parameterlab/c-seo-bench)
+
+---
+
+## 초록 (Abstract)
+
+대규모 언어 모델(LLM)은 검색엔진을 **대화형 검색엔진(Conversational Search Engines, CSE)**으로 전환하고 있다. 이에 따라 검색엔진 최적화(SEO) 역시 **대화형 검색엔진 최적화(C-SEO)**로 이동하고 있다. CSE 응답에서 웹 문서의 가시성을 높이기 위해 문서를 수정하는 전용 C-SEO 기법들이 등장하기 시작했으나, 이들은 제한된 응용 도메인에서만 테스트되어 폭넓은 도메인에서 유효한지 알 수 없었다. 더욱이 기존 평가는 오직 한 개의 웹 문서만 C-SEO를 채택하는 **단일 행위자(single-actor)** 시나리오만 고려했다. 현실에서는 전통 SEO에서 보았듯 다수의 참여자가 경쟁적으로 최신 C-SEO 기법을 동시에 채택하게 된다.
+
+본 논문은 다중 태스크, 다중 도메인, 다중 행위자 환경에서 C-SEO 기법을 평가하기 위해 설계된 최초의 벤치마크 **C-SEO Bench**를 제시한다. 질의응답(Question Answering)과 상품 추천(Product Recommendation) 두 태스크에 걸쳐 각 3개씩 총 6개 도메인을 다루며, 참여 행위자들의 채택률 변화에 따른 새로운 평가 프로토콜을 정식화했다. 실험 결과, 현재 대부분의 C-SEO 기법은 대체로 효과가 없을 뿐 아니라 예상과 정반대로 **문서 순위에 부정적 영향**을 미치는 경우가 빈번했다. 반면 LLM 컨텍스트 내 출처의 순위를 높이는 **전통적 SEO 전략**이 훨씬 더 효과적이었다. 또한 C-SEO 채택자가 늘어날수록 전체 이득이 감소해, 이 문제가 혼잡하고 제로섬(zero-sum)적 성격을 띠고 있음을 확인했다.
+
+---
+
+## 1. 서론 (Introduction)
+
+현대 검색엔진에 LLM이 통합되면서 정보 전달 방식이 하이퍼링크 순위 목록에서 인라인 인용이 포함된 자연어 직접 답변으로 바뀌고 있다. 현재 배포된 CSE는 상품 추천(Amazon Rufus, ChatGPT Product Recommendation)과 다중 문서 기반 질의응답(Perplexity.ai, ChatGPT Search, Google AI Search)처럼 성격이 매우 다른 응용을 포괄한다. 예를 들어 비디오 게임 설명을 더 흥미진진하게 만드는 C-SEO 기법이 상품 추천기에서는 통할지 몰라도 뉴스 요약기에서는 통하지 않을 수 있다.
+
+기존 벤치마크(Aggarwal et al., 2024; Pfrommer et al., 2024; Kumar & Lakkaraju, 2024; Nestaas et al., 2025)는 단일 응용과 단일 행위자만 다뤘다. 본 연구는 **웹 질의응답(Web, News, Debate)**과 **상품 추천(Retail, Video Games, Books)** 6개 도메인에서 **인용 순위 개선(citation ranking improvement)**—수정된 문서가 원본보다 LLM 응답에서 더 일찍 인용되는 정도—을 측정하며, 다수 행위자가 동시에 C-SEO를 채택하는 경쟁 시나리오를 도입한다.
+
+### 본 논문의 3대 기여
+1. **학계 통념에 대한 반박:** 현재 C-SEO 기법들을 종합 비교해 대부분 효과가 없으며 심지어 순위를 떨어뜨림을 실증했다.
+2. **C-SEO Bench 공개:** 2개 태스크, 6개 도메인, 1,900여 개 쿼리, 16,300여 개 실제 문서, 다중 채택자 시뮬레이션을 포괄하는 최초의 벤치마크를 구축했다.
+3. **전통 SEO의 지속적 필수성 입증:** LLM 입력 컨텍스트 내 문서 순서(전통 SEO)가 어떤 현행 C-SEO 기법보다 인용 순위에 훨씬 지배적인 영향을 미치므로, C-SEO는 SEO를 대체하는 것이 아니라 보완한다.
+
+---
+
+## 2. 배경 및 관련 연구 (Background and Related Work)
+
+#### Table 1: 기존 벤치마크 비교 (원문 p.3)
+
+| 벤치마크 | 유형 | 태스크 수 | 도메인 수 | 실제 데이터 | 문서 수 | 채택자 수 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Aggarwal et al. (2024) | White-hat | 1 | 1 | ✓ | 5k | 1 |
+| Pfrommer et al. (2024) | Black-hat | 1 | 1 | ✗ | 1.1k | 1 |
+| Kumar & Lakkaraju (2024) | Black-hat | 1 | 1 | ✗ | 10 | 1 |
+| Nestaas et al. (2025) | Black-hat | 1 | 1 | ✓ | 50 | 다수 |
+| **C-SEO Bench (본 연구)** | **White-hat** | **2** | **6** | **✓** | **16.3k** | **다수** |
+
+- **Black-hat C-SEO:** 프롬프트 인젝션이나 적대적 문자열로 경쟁사 순위를 깎거나 특정 상품을 강제 추천하게 하는 연구들(Nestaas et al., 2025; Kumar & Lakkaraju, 2024; Tang et al., 2025; Pfrommer et al., 2024). 소규모·가상 데이터셋 위주였다.
+- **White-hat C-SEO:** Aggarwal et al. (2024)은 문체 수정을 통한 가시성(단어 수) 향상을 평가했으나, 단일 태스크(웹 QA), 단일 행위자, 그리고 상품 추천에 부적합한 단어 수 지표라는 한계가 있었다. 본 연구는 LLM 강건성 공격이 아니라 **윤리적 화이트햇 콘텐츠 개선**을 평가한다.
+
+---
+
+## 3. 문제 정의 (Problem Definition)
+
+질의 `q`에 대해 검색엔진이 검색한 문서 집합 `D_q = {d₁, ..., dₙ}`이 LLM `φ`의 컨텍스트로 주어지면, LLM은 인라인 인용 `[c₁], [c₂], ..., [cₙ]`이 포함된 출력을 생성한다. C-SEO의 목표는 문서 `dᵢ`를 수정해 인용 순서 `rank(cᵢ)`를 최소화(가장 먼저 인용되도록)하는 것이다.
+
+- **SEO:** 검색 단계에서 문서 순위를 높여 LLM 컨텍스트 앞쪽에 배치되도록 하는 기법.
+- **C-SEO:** LLM에게 더 매력적으로 보이도록 문서 본문을 개선하는 기법.
+- **다중 채택자 게임 (Multiple C-SEO Adopters):** 비협력 게임으로 모델링하며, 채택률 `α ∈ [0, 1]`은 C-SEO를 채택한 행위자 비율을 뜻한다(`α = 10%`는 10명 중 1명, `100%`는 전원 채택).
+
+---
+
+## 4. C-SEO Bench 구성 및 평가 지표
+
+#### Table 2: 벤치마크 통계 (원문 p.5)
+
+| 태스크 | 도메인 | 출처 | 쿼리 수 | 문서 수 |
+| :--- | :--- | :--- | :---: | :---: |
+| **상품 추천** | Retail | Amazon Shopping Queries (쿼리당 10개) | 500 | 5,000 |
+| **상품 추천** | Video Games | Steam Games Dataset (쿼리당 10개) | 436 | 4,360 |
+| **상품 추천** | Books | GPT-4o 쿼리 + Google Books API (평균 9개) | 249 | 2,245 |
+| **질의응답** | Web | Natural Questions + Brave Search API (5개) | 300 | 1,500 |
+| **질의응답** | News | Multi-News + GPT-4o-mini 질문 (평균 8개) | 294 | 2,375 |
+| **질의응답** | Debate | Liu et al. (2023) 찬반 스니펫 (5개 이상) | 142 | 880 |
+
+- **순위 개선량 (`Δ`):** `Δ = rank⁰ - rank^α` (양수면 순위 상승, 음수면 하락). 통계적 유의성은 우측(및 좌측) **Wilcoxon 부호순위 검정** + **Holm–Bonferroni 다중비교 보정**(`p < 0.05`)으로 판정했다.
+- **채택률 곡선 아래 면적 (`AUC`):** 채택률 `α`가 0%에서 100%까지 변할 때의 평균 순위 개선량 `Δ(α)`을 적분한 값으로, 경쟁 채택률을 모르는 환경에서의 평균 효용을 측정한다.
+
+---
+
+## 5. 평가 대상 10가지 C-SEO 기법
+
+Aggarwal et al. (2024)의 8개 기법(`Authoritative`, `Statistics`, `Citations`, `Fluency`, `Unique Words`, `Technical Terms`, `Simple Language`, `Quotes`)에 더해 두 가지 신규 기법을 추가했다:
+1. **Content Improvement:** 위 8가지 변환을 하나로 통합해 볼드 강조·구조화를 수행하는 종합 개선 기법.
+2. **LLM Guidance:** `llms.txt` 표준에서 영감을 받아, 원본 문서 맨 앞에 마크다운 요약 가이드를 부착하는 기법.
+
+모든 문서 변환은 `gpt-4o-mini`로 수행했고, CSE 평가 모델은 `gpt-4o-mini`, `claude-3-5-haiku`, `o3`, `o4-mini` 4종을 사용했다.
+
+---
+
+## 6. 주요 실험 결과 (Experiments)
+
+#### Table 3: GPT-4o-mini 기준 순위 개선량 평균 ± 표준편차 (원문 p.8)
+
+| 기법 | Retail | Games | Books | Web | News | Debate |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Authoritative | 0.11 ±1.18 | 0.07 ±1.25 | 0.11 ±0.94 | -0.04 ±0.89 | -0.04 ±1.03 | 0.01 ±1.55 |
+| Statistics | -0.07 ±1.00 | 0.00 ±1.11 | -0.11 ±1.04 | **-0.53** ±1.27 | -0.05 ±1.31 | **-0.80** ±1.70 |
+| Citations | -0.01 ±1.14 | 0.04 ±1.23 | 0.00 ±0.91 | 0.03 ±1.00 | -0.10 ±1.09 | -0.15 ±1.50 |
+| Fluency | 0.06 ±1.11 | 0.07 ±1.27 | 0.07 ±1.05 | 0.03 ±0.89 | -0.01 ±1.08 | 0.32 ±1.64 |
+| Unique Words | 0.09 ±1.09 | 0.02 ±1.20 | 0.04 ±1.04 | -0.07 ±0.92 | -0.10 ±1.03 | -0.08 ±1.66 |
+| Tech. Terms | 0.05 ±1.13 | 0.07 ±1.32 | -0.03 ±0.86 | 0.01 ±0.95 | -0.03 ±0.97 | -0.05 ±1.56 |
+| Simple Lang. | 0.03 ±1.05 | 0.11 ±1.39 | 0.01 ±0.78 | 0.02 ±1.02 | -0.04 ±1.00 | 0.04 ±1.63 |
+| Quotes | 0.06 ±1.09 | 0.04 ±1.29 | 0.01 ±0.97 | 0.00 ±0.96 | -0.06 ±1.07 | -0.19 ±1.64 |
+| **LLM Guidance** | **+0.36** ±1.47 | **+0.24** ±1.05 | 0.14 ±1.07 | 0.10 ±0.99 | 0.00 ±1.10 | 0.15 ±1.65 |
+| **Content Impr.** | **+0.18** ±1.09 | 0.13 ±1.23 | 0.11 ±0.95 | 0.02 ±0.90 | -0.04 ±1.00 | 0.11 ±1.61 |
+| **Best SEO (1위 배치)** | **+2.77** ±2.31 | **+1.89** ±2.32 | **+1.60** ±2.04 | **+0.87** ±1.35 | **+0.70** ±1.64 | **+1.54** ±2.07 |
+
+#### Table 4: Claude 3.5 Haiku 기준 순위 개선량 (원문 p.8)
+Claude 3.5 Haiku에서는 상품 추천 30개 설정 중 **26개에서 유의한 음수(순위 하락)**가 발생했다(`Statistics` Retail `-0.82`, Debate `-0.85`). 반면 `Best SEO`는 Retail **+1.61**, Games **+0.93**, Books **+0.61**, Debate **+0.56**으로 전 도메인에서 압도적 상승을 유지했다.
+
+### 핵심 발견 3가지
+1. **현행 C-SEO의 한계와 역효과 (Section 6.2):** 54개 평가 조합 중 유의한 순위 상승은 단 3건(`LLM Guidance` Retail·Games, `Content Improvement` Retail)뿐이었고 질의응답 태스크에서는 단 하나의 기법도 유의하지 않았다. 특히 `Statistics`는 24개 설정 중 19개에서 순위를 유의하게 하락시켰다. Aggarwal (2024)과의 차이는 지표 차이(단어 수 vs. 인용 순위)에서 비롯되며, 단어 수가 늘어도 인용 순위가 앞당겨지는 것은 아니다.
+2. **전통 SEO(입력 컨텍스트 순서)의 압도적 지배력 (Section 6.3):** 문서를 LLM 입력 컨텍스트의 1~2번째에 배치하는 것(전통 SEO)이 어떤 텍스트 수정 기법보다 훨씬 큰 인용 순위 상승을 만들었다(Figure 4, Table 5). 따라서 C-SEO는 SEO를 대체하지 못하고 보완한다.
+3. **혼잡한 제로섬 게임 (Section 6.4):** 채택률이 10%에서 100%로 올라갈수록 참여자당 평균 순위 이득이 꾸준히 감소해 0으로 수렴했다(Figure 5: `LLM Guidance` Retail AUC = 1.88, Games AUC = 1.58 / `Content Improvement` Retail AUC = 1.05, Games AUC = 0.74).
+
+---
+
+## 7. 결론 및 한계 (Conclusion & Limitations)
+
+현행 화이트햇 C-SEO 기법은 대부분 무효하거나 순위를 하락시킬 위험이 있으며, 검색 랭킹을 높이는 전통 SEO가 대화형 검색에서도 여전히 핵심이다. 한계점으로는 ① 화이트햇만 다루어 블랙햇 적대적 공격은 제외했고, ② 전통 SEO와 C-SEO의 상호작용(시너지·충돌)을 직접 측정하지 않았으며, ③ 상용 폐쇄형 모델과 영어 데이터셋에 한정되었고, ④ 문서가 컨텍스트 창을 초과해 요약되는 경우는 후속 과제로 남겼다.

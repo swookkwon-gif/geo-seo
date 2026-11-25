@@ -1,0 +1,119 @@
+---
+title: "[원문 번역 · Gemini] SAGEO Arena: A Realistic Environment for Evaluating Search-Augmented GEO (Kim et al., KDD '26)"
+description: "연세대학교·건국대학교 Sunghwan Kim, Wooseok Jeong, Serin Kim, Sangam Lee, Dongha Lee(ACM SIGKDD 2026)의 'SAGEO Arena'(DOI: 10.1145/3770855.3818146) 원문 본문(1~5장, Table 1–5 및 핵심 발견)을 한국어로 번역·정리했습니다. (Gemini 작성 버전)"
+category: "paper"
+publishedAt: "2026-11-25"
+tags: ["GEO", "SAGEO-Arena", "KDD2026", "원문번역", "Gemini"]
+tldr: "후보 문서를 고정하던 기존 GEO 벤치마크의 한계를 넘어 17만 건 웹 코퍼스, 구조화 메타데이터(Title·Meta·Headings·JSON-LD), 그리고 검색(Retrieval)→리랭킹(Reranking)→생성(Generation) 전체 파이프라인을 통합한 SAGEO Arena를 구축한 결과, 본문만 고치는 기존 GEO 기법은 검색·리랭킹 단계 가시성을 오히려 떨어뜨렸으며 단계별 맞춤 최적화(StageAware SAGEO)가 필수적임을 입증했다."
+keyTakeaways:
+  - "기존 GEO 벤치마크(GEO-Bench, AutoGEO, C-SEO Bench)는 검색·리랭킹 단계를 생략하고 HTML 구조화 정보(스키마 등)를 버려 현실과 괴리가 컸다."
+  - "본문 텍스트만 최적화(Body Text only)하면 평균 검색 Hit Rate(H@20)가 -9%(ΔRank -4.54), 리랭킹 H@10이 -16% 하락하며, 특히 AutoGEO는 검색 순위가 -22.35계단 급락했다."
+  - "구조화 정보(Title, Meta, Headings, JSON-LD) 최적화는 검색 H@20을 평균 +22%(ΔRank +2.72) 끌어올렸으며, 실제 생성 단계 인용은 주로 본문에서 발생해 구조화 정보(검색 주도)와 본문(생성 주도)이 상호보완적 역할을 한다."
+  - "단계별 우선순위에 맞춘 StageAware SAGEO는 검색 H@20 +28%(ΔRank +4.86), 생성 인용률 0.58(ΔRank +1.01)로 평가 대상 중 최고 종합 성능을 달성했다."
+source:
+  title: "SAGEO Arena: A Realistic Environment for Evaluating Search-Augmented Generative Engine Optimization"
+  authors:
+    - "Sunghwan Kim"
+    - "Wooseok Jeong"
+    - "Serin Kim"
+    - "Sangam Lee"
+    - "Dongha Lee"
+  year: 2026
+  venueOrPublisher: "Proceedings of the 32nd ACM SIGKDD Conference on Knowledge Discovery and Data Mining V.2 (KDD 2026), Jeju Island, Republic of Korea"
+  doi: "10.1145/3770855.3818146"
+  url: "https://doi.org/10.1145/3770855.3818146"
+featured: false
+draft: false
+---
+
+> **비교 안내:** 본 포스트는 Kim et al. (KDD 2026, SAGEO Arena) 원문의 **Gemini 번역 버전**입니다.
+> - **BAZE(`gpt-6.2-sol`) 전 문장 완역 비교 버전:** [[원문 완역 · BAZE] SAGEO Arena: Search-Augmented GEO](/kim-2026-sageo-arena-translation-baze/)
+> - **공식 코드 및 아티팩트:** [GitHub (happysnail06/SAGEO_Arena)](https://github.com/happysnail06/SAGEO_Arena) · [Zenodo](https://doi.org/10.5281/zenodo.20423531)
+
+---
+
+## 초록 (Abstract)
+
+검색 증강 생성형 엔진(**Search-Augmented Generative Engines, SAGE**)은 웹 규모 검색과 생성 능력을 결합해 종합 답변을 제공하는 새로운 정보 접근 패러다임이다. 이에 따라 AI 생성 응답에서 웹 문서 가시성을 높이는 **SAGEO** 연구가 주목받고 있으나, 기존 벤치마크는 두 가지 결정적 한계를 안고 있다: (1) 미리 정해진 후보 문서에서만 평가해 앞단의 **검색(Retrieval)과 리랭킹(Reranking) 단계를 생략**했고, (2) 실제 웹 문서에 존재하는 **구조화 정보(Title, Meta Description, Headings, Schema/JSON-LD)**를 버리고 평문 본문만 다뤘다.
+
+본 논문은 17만여 건의 웹 문서 코퍼스와 풍부한 구조화 주석, 그리고 검색→리랭킹→생성 전체 파이프라인을 통합한 최초의 현실적·재현 가능 벤치마크 **SAGEO Arena**를 제안한다. 실험 결과, 기존 본문 중심 GEO 기법들은 검색·리랭킹 단계에서 오히려 가시성을 떨어뜨려 실무적으로 비현실적임이 드러났다. 구조화 정보 활용이 이를 완화하며, 궁극적으로 각 파이프라인 단계의 우선순위에 맞춘 **단계 인식 최적화(Stage-Aware SAGEO)**가 가장 강력한 종합 가시성 향상을 달성했다.
+
+---
+
+## 1. 서론 및 기존 벤치마크 비교 (Section 1 & 2)
+
+MS Copilot이 Bing Search에 근거해 응답을 생성하듯, 실제 생성형 검색에서는 문서가 먼저 검색·리랭킹 파이프라인을 통과해 LLM 컨텍스트 안에 들어가야만 인용될 수 있다. 즉, **SEO(검색·리랭킹)와 GEO(생성·인용)는 반드시 함께 최적화되어야 한다.**
+
+#### Table 1: SAGEO Arena와 기존 벤치마크 비교 (원문 p.3)
+
+| 벤치마크 | 문서 코퍼스 | 검색(Retrieval) | 리랭킹(Reranking) | 생성(Generation) | 구조화 정보 | 본문 텍스트 | 가시성 지표 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| GEO-Bench (Aggarwal 2024) | — | ✗ | ✗ | ✓ | ✗ | ✓ | Word Count |
+| AutoGEO (Wu 2025) | — | ✗ | ✗ | ✓ | ✗ | ✓ | Word Count, Utility |
+| C-SEO Bench (Puerto 2025) | — | ✗ | ✗ | ✓ | ✗ | ✓ | Citation Rank |
+| CC-GSEO-Bench | — | ✗ | ✗ | ✓ | ✗ | ✓ | Influence |
+| **SAGEO Arena (본 연구)** | **170K** | **✓** | **✓** | **✓** | **✓** | **✓** | **Hit Rate, Rank Change** |
+
+---
+
+## 2. SAGEO Arena 설계 (Section 3)
+
+- **대규모 구조화 코퍼스:** 9개 IR 데이터셋에서 각 300개씩 총 **2,700개 고유 쿼리**를 추출하고 Google Custom Search API로 쿼리당 최대 100건을 크롤링해 **171,003개 고유 웹 문서**를 구축했다.
+- **5개 필드 분리 추출:** ① `Title`, ② `Meta Description`, ③ `Headings (H1–H6)`, ④ `Schema/JSON-LD`, ⑤ `Body Text`. 각 본문 패시지 `pᵢ`에 문서의 구조화 정보 `S(d)`를 결합한 **시맨틱 단위 `U(pᵢ) = S(d) ∪ {pᵢ}`**로 색인한다.
+- **3단계 파이프라인 (`A_q = G(q, F(q, R_k(q, D)))`):**
+  1. **Retriever (`R`):** 필드별 개별 BM25 인덱스 + Reciprocal Rank Fusion(RRF)으로 상위 `k = 100` 후보 추출.
+  2. **Reranker (`F`):** `Qwen3-Reranker-4B` 크로스인코더로 패시지 단위 재순위화해 상위 `k = 10` 선별.
+  3. **Generator (`G`):** `GPT-5-mini`가 구조화 필드와 함께 상위 후보를 입력받아 인라인 인용 포함 답변 생성.
+- **평가 절차:** 베이스라인 실행 후 리랭킹 상위 10위 문서 중 1개를 표적 문서(`d_tgt`)로 선정 → 최적화 적용 후 코퍼스에 **재색인(re-index)** → 전체 파이프라인 재실행 후 각 단계의 **Hit Rate(`H@20`, `H@10`, `Cite Rate`)**와 **순위 변화(`ΔRank`)** 추적.
+
+---
+
+## 3. 주요 실험 결과 (Section 4 & 5)
+
+Aggarwal (2024)의 8개 기법 + `All-in-One`(Puerto 2025) + `AutoGEO`(Wu 2025) 총 10개 전략을 **① 본문만(Body Text only), ② 구조화 정보만(Structural Info only), ③ 둘 다(Both)** 세 범위로 나누어 평가했다.
+
+#### Table 2: SAGEO 전략별·범위별 단계 가시성 변화 요약 (원문 p.6)
+
+| 전략 | Body Only: 검색 H@20 (ΔRank) | Body Only: 리랭킹 H@10 (ΔRank) | Body Only: 생성 Cite (ΔRank) | Struct Only: 검색 H@20 (ΔRank) | Struct Only: 생성 Cite (ΔRank) | Both: 검색 H@20 (ΔRank) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Baseline** | 0.58 (—) | 1.00 (—) | 0.50 (—) | 0.58 (—) | 0.50 (—) | 0.58 (—) |
+| Authoritative | 0.57 (-0.20) | 0.91 (-0.24) | 0.49 (-0.10) | 0.68 (+1.60) | 0.49 (+0.01) | 0.69 (+0.47) |
+| Cite Sources | 0.56 (-1.50) | 0.87 (-0.45) | 0.48 (-0.13) | 0.74 (+6.05) | 0.52 (+0.25) | 0.66 (-1.81) |
+| EasyLang | 0.52 (-4.18) | 0.84 (-0.54) | 0.49 (-0.09) | 0.74 (+5.15) | 0.53 (+0.38) | 0.71 (+3.76) |
+| Fluency | 0.57 (-0.71) | 0.91 (-0.18) | 0.50 (-0.01) | **0.75 (+6.62)** | 0.53 (+0.37) | 0.72 (+2.37) |
+| Quotation | 0.57 (-0.33) | 0.90 (-0.36) | 0.47 (-0.26) | 0.74 (+5.47) | 0.53 (+0.30) | **0.79 (+8.87)** |
+| Statistics | 0.57 (-0.51) | 0.90 (-0.33) | 0.48 (-0.18) | 0.75 (+6.03) | **0.54 (+0.47)** | 0.71 (+1.53) |
+| Tech. Terms | 0.50 (-6.23) | 0.80 (-1.03) | 0.47 (-0.15) | 0.66 (-0.59) | 0.51 (+0.22) | 0.62 (-2.39) |
+| Unique Words | 0.53 (-3.47) | 0.86 (-0.70) | 0.46 (-0.33) | 0.69 (+1.09) | 0.49 (-0.06) | 0.66 (-0.16) |
+| All-in-One | 0.50 (-5.93) | 0.83 (-0.68) | 0.49 (-0.03) | 0.71 (+2.44) | 0.50 (+0.12) | 0.69 (+1.96) |
+| **AutoGEO** | **0.37 (-22.35)** | **0.58 (-2.28)** | **0.39 (-0.78)** | 0.60 (-6.68) | 0.51 (+0.31) | 0.44 (-20.15) |
+| **평균 (Avg.)** | **0.53 (-4.54)** | **0.84 (-0.68)** | **0.47 (-0.21)** | **0.71 (+2.72)** | **0.52 (+0.24)** | **0.67 (-0.56)** |
+
+### 5가지 핵심 발견
+1. **본문만 고치는 기존 GEO의 역효과:** 일상 어휘를 전문 용어나 희귀 어휘로 바꾸면 사용자 쿼리와 어휘 불일치(lexical mismatch)가 발생해 검색 점수가 급락한다. 특히 `AutoGEO`는 장황한 재작성으로 키워드 밀도를 희석시켜 **검색 순위가 `-22.35`계단, 리랭킹 `H@10`이 `-42%` 추락**했다.
+2. **구조화 정보 최적화의 강력한 검색 방어력:** Title·Meta·Headings·JSON-LD에 핵심 개체·수치·키워드를 응축하자 검색 `H@20`이 평균 **+22%(`ΔRank +2.72`)** 상승했고, 더 많은 문서가 하류 단계에 도달해 생성 인용률도 함께 올랐다.
+3. **리랭킹 병목과 응답 위치의 중요성:** 모든 전략이 리랭킹 단계에서 취약했으며, 표적 문서의 **5.8%**가 10위에서 11위로 단 1계단 밀려 생성기 입력에서 탈락했다. 사례 분석(Figure 3) 결과, **직접 답변을 문서 초반 문단에 배치**하고 주제 범위를 벗어나지 않는 것이 리랭킹 방어의 핵심이었다.
+4. **도메인 차이 및 인용 출처 밀도 (Figure 4 & 5):** 일반 정보 탐색·QA 도메인에서는 통계 추가 등이 효과적이었으나, **Shopping(쇼핑) 도메인에서는 모든 기존 GEO 기법이 인용률을 떨어뜨렸다.** 또한 인용 출처 역추적 결과, **검색은 구조화 정보가 주도하지만 실제 생성 단계 인용의 대다수는 본문 텍스트에서 발생**해 두 영역의 상호보완성이 확인되었다.
+5. **강건성 검증 (Table 4 & 5):** 검색기를 `Dense(BGE-base)`·`Hybrid`로, 리랭커를 `BGE-Reranker-v2-m3`로, 생성기를 `Claude Sonnet 4.6`으로 교체해도 본문 단독 최적화의 가시성 하락 추세는 동일하게 유지되었다.
+
+---
+
+## 4. 단계 인식 최적화: StageAware SAGEO (Table 3)
+
+저자들은 파이프라인 각 단계의 우선순위에 맞춘 **4대 원칙**을 결합한 **StageAware SAGEO**를 제안했다:
+1. **구조화 필드에 핵심 개체·수치 집약** (검색 매칭 강화)
+2. **핵심 주장을 본문 초반에 독립적·근거 포함 형태로 배치** (리랭킹·생성 인용성 강화)
+3. **문단 간 주제 일관성 유지** (모호한 대명사를 명시적 주어·개체로 치환)
+4. **도메인 맥락 적응** (쇼핑 등 도메인 톤·사용자 의도 고려)
+
+#### Table 3: 조합 전략 vs. StageAware SAGEO (Both 설정, 원문 p.8)
+
+| 기법 | 검색 H@20 (ΔRank) | 리랭킹 H@10 (ΔRank) | 생성 Cite (ΔRank) |
+| :--- | :---: | :---: | :---: |
+| Baseline | 0.58 (—) | 1.00 (—) | 0.50 (—) |
+| EasyLang + Quote | 0.67 (-0.25) | 0.78 (-0.33) | 0.54 (+0.64) |
+| Fluency + Quote | 0.66 (-0.63) | 0.77 (-0.43) | 0.54 (+0.65) |
+| Fluency + Stats | 0.65 (-1.63) | 0.76 (-0.55) | 0.53 (+0.60) |
+| **StageAware (본 연구)** | **0.75 (+28%, +4.86)** | **0.80 (-0.08)** | **0.58 (+1.01)** |
+
+`StageAware SAGEO`는 검색(`+4.86`), 리랭킹(`-0.08`로 손실 최소화), 생성(인용률 `0.58`, `+1.01`) 모든 단계에서 압도적 1위를 기록했다.
