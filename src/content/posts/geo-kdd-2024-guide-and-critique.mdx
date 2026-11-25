@@ -1,0 +1,126 @@
+---
+title: "[해설·크리틱] GEO: Generative Engine Optimization (KDD '24) 쉽게 이해하기와 4가지 비판적 검토"
+description: "Aggarwal et al. (2024)의 GEO 원전 논문을 직관적인 비유로 해설하고, 후속 학술 연구(KDD '26 SAGEO Arena, NeurIPS '25 C-SEO Bench, ICML '26, Martinez 2026 등)의 원문 인용과 링크를 바탕으로 4가지 핵심 크리틱을 정리합니다."
+category: "paper"
+publishedAt: "2026-11-25"
+tags: ["GEO", "KDD2024", "논문해설", "크리틱", "SAGEO-Arena", "C-SEO-Bench"]
+tldr: "Aggarwal et al. (2024)은 생성형 엔진 시대의 가시성 최적화를 최초로 정식화했지만, ① 양적 노출 중심 지표(감성·추천 품질 부재), ② 1단계 검색(Retrieval) 고정 실험, ③ 사실 검증 없는 형식적 통계·출처 추가, ④ 엔진 간 불일치와 확률적 측정 불확실성이라는 4가지 구조적 한계를 남겼으며, 이는 2025~2026년 후속 학술 연구들의 핵심 출발점이 되었다."
+keyTakeaways:
+  - "Position-Adjusted Word Count는 '얼마나 많이, 앞부분에 인용되었는가'만 계산할 뿐, 브랜드에 대한 긍정/부정 감성, 포지셔닝 일치 여부, 추천 유해성(harm)은 측정하지 못한다."
+  - "논문은 Google 상위 5개 문서를 고정해 2단계(생성)만 테스트했기 때문에, 1단계 검색(Retrieval·Reranking) 순위가 어떻게 변하는지 검증하지 못했다(KDD '26 SAGEO Arena, NeurIPS '25 C-SEO Bench가 이 지점을 직접 반박)."
+  - "Table 4의 출처·통계 추가는 LLM이 자동 생성한 텍스트로, '진짜 검증된 근거'와 '그럴듯하게 꾸민 형식'을 구분하지 못한다(Counter-GEO-Bench, Martinez 2026 지적)."
+  - "동일 논문 내부에서도 자체 GE(Table 1)와 Perplexity.ai(Table 7)에서 Cite Sources의 주관 점수가 정반대로 움직였으며, 이는 엔진별 차이와 확률적 측정 표준 부재를 드러낸다(Sielinski 2026, ICML '26 Position)."
+source:
+  title: "GEO: Generative Engine Optimization"
+  authors:
+    - "Pranjal Aggarwal"
+    - "Vishvak Murahari"
+    - "Tanmay Rajpurohit"
+    - "Ashwin Kalyan"
+    - "Karthik Narasimhan"
+    - "Ameet Deshpande"
+  year: 2024
+  venueOrPublisher: "Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD '24)"
+  doi: "10.1145/3637528.3671900"
+  url: "https://arxiv.org/abs/2311.09735"
+featured: false
+draft: false
+---
+
+본 포스트는 GEO 분야의 출발점이 된 **Aggarwal et al. (2024, KDD '24)** 논문을 처음 접하는 독자도 직관적으로 이해할 수 있도록 쉽게 풀어쓰고, 이어서 **4가지 핵심 크리틱과 이를 뒷받침하는 2025~2026년 후속 논문들의 원문 인용 및 링크**를 정리한 심화 해설본이다.
+
+- **원문 완역본 보기:** [[원문 완역] GEO: Generative Engine Optimization (Aggarwal et al., KDD '24)](/geo-kdd-2024-full-translation/)
+- **논문 원문 (arXiv / ACM DOI):** [arXiv:2311.09735](https://arxiv.org/abs/2311.09735) · [DOI: 10.1145/3637528.3671900](https://doi.org/10.1145/3637528.3671900)
+
+---
+
+## 1. 논문 핵심을 3분 만에 이해하기
+
+### 기존 검색(SEO)과 AI 검색(GEO)은 무엇이 다른가?
+- **기존 구글 검색(SEO):** 1위, 2위, 3위 링크가 줄 서 있다. 따라서 *"우리 웹사이트가 몇 위인가?"*가 곧 가시성이다.
+- **AI 검색(GEO):** ChatGPT Search, Perplexity, Google AI Overviews는 링크 목록 대신 **하나의 긴 답변 문단**을 작성하고 문장 끝에 `[1]`, `[2]`, `[3]` 각주만 붙인다. 링크 순위가 사라졌기 때문에 *"이 답변 문단 안에서 우리 웹사이트가 얼마나 눈에 띄었는가?"*를 새로 정의해야 했다.
+
+### 논문이 증명한 핵심 결과 3가지
+1. **키워드 반복(Keyword Stuffing)은 더 이상 통하지 않는다:** 기존 SEO처럼 키워드를 억지로 반복하면 LLM이 요약 과정에서 오히려 배제해 가시성이 떨어진다(`19.3 → 17.7`, **-8.3%**).
+2. **근거와 가독성이 가시성을 최대 40% 끌어올린다:** 전문가 직접 인용문 추가(`Quotation Addition`, **+40.9%**), 정량 통계 보강(`Statistics Addition`, **+30.6%**), 문장 흐름 개선(`Fluency Optimization`, **+28.0%**), 출처 명시(`Cite Sources`, **+27.5%**)가 가장 큰 효과를 냈다.
+3. **하위 순위(Rank-5) 문서의 역전 기회:** 기존 검색 5위에 머물던 문서에 출처 인용(`Cite Sources`)을 추가하면 가시성이 **+115.1%** 급등한 반면, 이미 1위였던 문서는 점유율이 분산되며 **-30.3%** 감소했다.
+
+---
+
+## 2. 4가지 핵심 크리틱: 의미, 근거, 그리고 후속 연구 원문
+
+Aggarwal et al. (2024)은 GEO라는 연구 분야를 개척한 기념비적 논문이지만, 실제 마케팅·브랜드 전략이나 상용 AI 검색 환경에 그대로 적용하기 전에 반드시 짚어야 할 **4가지 구조적 한계**가 있다. 아래 각 크리틱은 2025~2026년 발표된 주요 학술 논문들에서 동일하게 제기된 쟁점이며, 추후 직접 찾아볼 수 있도록 원문 링크와 원문 본문을 함께 수록했다.
+
+---
+
+### 크리틱 ① 지표의 한계 — "양적 노출(단어 수·위치)만 재고 감성·포지셔닝·유해성은 놓친다"
+
+#### 쉬운 해설과 의미
+저자들이 만든 핵심 공식 `Position-Adjusted Word Count`는 **① 우리 출처가 인용된 단어 수** × **② 답변 앞쪽에 나올수록 높은 가중치(`e^(-pos(s)/|S|)`)**로 계산된다. 원리는 명쾌하지만 **내용의 긍정/부정 방향을 전혀 보지 않는다.**
+
+예를 들어 AI 답변 첫 문장에 *"A사 제품은 최근 잦은 고장과 환불 지연으로 소비자 불만이 급증하고 있다 [1]"*라고 길게 인용되면, 논문 공식상 A사는 **가시성 1위**를 받지만 브랜드 마케터 입장에서는 **심각한 평판 위기**다. 또한 이 지표는 40% 상승이 실제 클릭률이나 구매 전환으로 이어지는지도 보장하지 못한다.
+
+#### 관련 후속 연구 및 원문 근거
+1. **Olivier Martinez (2026)**, *Optimizing Visibility in Generative Engines: A Critical Survey of Generative Engine Optimization (2023-2026)* — [arXiv:2607.14035](https://arxiv.org/abs/2607.14035) (p. 4)
+   > *"This result does not mean that 40% more readers will click, nor that a page will gain 40% in retrieval probability. It means that, in this testbed, a source already provided to the generator receives a larger position-weighted share of attributed text."*
+2. **Qianfeng Wen et al. (2026)**, *SafeGEO: Understanding Generative Engine Optimization Risks in Recommendation Agents* — [arXiv:2606.28356](https://arxiv.org/abs/2606.28356) (p. 2, Table 1)
+   > *"GEO-Bench (Aggarwal et al., 2024): Visibility, not recommendation harm."*
+3. **Edward Malthouse et al. (2026)**, *Evaluating Brand Retrieval and Ranking in Large Language Model Recommendations* — [arXiv:2609.16304](https://arxiv.org/abs/2609.16304) (p. 1–2)
+   > *"Category-only queries reveal substantial omission of established brands and limited evidence that recommendation prominence follows conventional brand popularity... diagnostic positioning probes demonstrate that brands omitted from ordinary recommendations can remain conditionally retrievable..."*
+
+---
+
+### 크리틱 ② 실험 설계의 현실 괴리 — "1단계 검색(Retrieval)을 고정해 버렸다"
+
+#### 쉬운 해설과 의미
+실제 상용 AI 검색은 **2단계 게임**이다.
+- **1단계 (검색/Retrieval — "책상 위에 후보 올리기"):** 수백만 개 웹페이지 중 검색엔진이 상위 5~10개 후보 문서를 뽑아 LLM 책상 위에 올려놓는다.
+- **2단계 (생성/Generation — "책상 위 문서 읽고 답변 쓰기"):** LLM이 올라온 5개 문서만 읽고 답변을 합성한다.
+
+Aggarwal (2024)은 Google에서 **이미 뽑힌 상위 5개 문서를 고정**한 채 2단계만 실험했고, Perplexity.ai 검증조차 실제 웹 크롤링이 아니라 **5개 문서 텍스트를 파일로 직접 업로드**했다. 따라서 1단계(검색 상위권 진입)에 실패해 LLM 책상 위에 오르지 못한 웹사이트는 아무리 GEO를 적용해도 노출이 0이다. 더욱이 GEO 수정이 1단계 검색 순위에 악영향을 줄 수 있는지 검증되지 않았다.
+
+#### 관련 후속 연구 및 원문 근거
+1. **Sunghwan Kim et al. (KDD 2026)**, *SAGEO Arena: A Realistic Environment for Evaluating Search-Augmented Generative Engine Optimization* — [DOI: 10.1145/3770855.3818146](https://doi.org/10.1145/3770855.3818146) (p. 1–2) *(본문 `[1]`이 Aggarwal et al., 2024)*
+   > *"Existing benchmarks [1, 9, 38, 50] tend to oversimplify real web environments, leaving it unclear whether current optimization strategies are effective in practical settings. Specifically, there are two major limitations: (1) Lack of end-to-end evaluation. Current benchmarks predominantly operate on pre-determined candidate documents, abstracting away the retrieval and reranking stages that precede generation. ... Our findings reveal that existing approaches remain largely impractical, often degrading visibility in retrieval and reranking."*
+2. **Haritz Puerto et al. (NeurIPS 2025)**, *C-SEO Bench: Does Conversational SEO Work?* — [arXiv:2506.11097](https://arxiv.org/abs/2506.11097) (p. 2)
+   > *"Our results (illustrated in Figure 1) suggest that traditional SEO methods, those that improve retrieval ranking, remain essential for CSE, in contrary to prior beliefs [Aggarwal et al., 2024]. Hence, we believe C-SEO will not replace SEO, but will complement it."*
+3. **Olivier Martinez (2026)** — [arXiv:2607.14035](https://arxiv.org/abs/2607.14035) (p. 4)
+   > *"The Perplexity test provides useful but limited validation: it includes 200 examples, with texts uploaded as files rather than web pages retrieved organically."*
+
+---
+
+### 크리틱 ③ 윤리와 사실 검증의 사각지대 — "진짜 근거인가, 근거처럼 보이는 형식인가?"
+
+#### 쉬운 해설과 의미
+원문 Table 4에서 `Cite Sources`(+132.4%)와 `Statistics Addition`(+65.5%)은 엄청난 가시성 상승을 기록했다. 하지만 실험에서는 사람이 진짜 1차 보고서를 찾아 넣은 것이 아니라, **LLM(`gpt-3.5-turbo`)에게 "통계나 출처를 덧붙여 고쳐 줘"라고 프롬프트를 줘서 자동 생성**했다. 즉, 실제 존재하지 않는 조사 기관이나 수치가 들어갔을 가능성이 있다.
+
+이는 역설적으로 **LLM이 사실 검증(Verifiability)을 하지 않고 '출처·통계처럼 보이는 형식'만 보고도 인용 비중을 높여준다**는 취약점을 드러낸다. 따라서 윤리적 GEO(실제 검증 가능한 1차 데이터 공개)와 악의적 조작(허위 통계·가짜 출처로 LLM을 속이는 정보 왜곡)의 경계 설정이 필수적이다.
+
+#### 관련 후속 연구 및 원문 근거
+1. **Olivier Martinez (2026)** — [arXiv:2607.14035](https://arxiv.org/abs/2607.14035) (p. 5, Table 1)
+   > *"Statistics Addition | pawc: 25.2 | Subjective Impression: 23.7 | Critical interpretation: Substantial gain, factuality not guaranteed"*
+2. **Bing Zheng et al. (2026)**, *Counter-GEO-Bench: Evaluating Defenses Against Information-Distorting Generative Engine Optimization* — [arXiv:2609.02316](https://arxiv.org/abs/2609.02316) (p. 1)
+   > *"Generative engine optimization (GEO) enables content producers to increase the visibility of their web pages in generative search engines, but the same techniques can deliver targeted misinformation when adversaries publish ordinary-looking GEO-optimized documents that victim large language models (LLMs) retrieve and synthesize into distorted answers... Safety-taxonomy guardrails target policy violations, while GEO misinformation passes through them as fluent informational content."*
+3. **Yizhu Wen et al. (ICML 2026 Position Paper)**, *Position: Generative Engine Optimization Creates Underexamined Risks, Governance Must Target Concentration, Disclosure, and Academic Blind Spots* — [arXiv:2606.12439](https://arxiv.org/abs/2606.12439) (p. 2)
+   > *"(ii) undisclosed commercial influence, where promotion is embedded in retrieved evidence and model reasoning rather than labeled advertising"*
+
+---
+
+### 크리틱 ④ 엔진 간 불일치와 확률적 측정의 불확실성 — "표준 측정 방법론의 부재"
+
+#### 쉬운 해설과 의미
+동일한 논문 내부에서도 결과가 엇갈렸다. 자체 GPT-3.5 엔진(Table 1)에서는 `Cite Sources`가 객관(`19.3 → 24.6`)·주관(`19.3 → 21.9`) 모두 상승했지만, **Perplexity.ai(Table 7)에서는 객관 지표(`24.1 → 26.8`)는 오른 반면 주관 지표(`24.7 → 19.0`)는 기준선보다 크게 하락**했다. `Keyword Stuffing`도 Perplexity.ai에서 객관 지표는 하락(`21.9`)했는데 주관 지표는 상승(`28.1`)했다.
+
+생성형 엔진은 본질적으로 비결정적(확률적)이며, 플랫폼(ChatGPT, Perplexity, Gemini, Google AI Overviews)마다 내부 파이프라인과 인용 규칙이 다르다. 따라서 단일 모델·단일 실행(single-run)의 점추정만으로는 신뢰할 수 있는 GEO 성과를 단정할 수 없다.
+
+#### 관련 후속 연구 및 원문 근거
+1. **Ronald Sielinski (2026)**, *Quantifying Uncertainty in AI Visibility: A Statistical Framework for Generative Search Measurement* — [arXiv:2603.08924](https://arxiv.org/abs/2603.08924) (p. 1–2)
+   > *"AI-powered answer engines are inherently non-deterministic: identical queries submitted at different times can produce different responses and cite different sources. Despite this, current approaches to measuring domain visibility in generative search rely on single-run point estimates of citation share and prevalence, treating them as fixed values... Bootstrap confidence intervals reveal that many apparent differences between domains fall within the noise floor of the measurement process."*
+2. **Yizhu Wen et al. (ICML 2026 Position Paper)** — [arXiv:2606.12439](https://arxiv.org/abs/2606.12439) (p. 2)
+   > *"(iii) academic–industry blind spots, where offline setups miss deployment dynamics, including cross-platform content distribution and whether a target continues to be mentioned and cited over time."*
+
+---
+
+## 3. 요약: Aggarwal (2024)의 학술적 위치
+
+Aggarwal et al. (2024)은 *"생성형 검색 시대에 콘텐츠 크리에이터가 무엇을 최적화해야 하는가"*라는 질문을 최초로 학술적으로 정식화하고 실증했다는 점에서 반드시 읽어야 할 원전이다. 동시에 위 4가지 크리틱—**브랜드·감성 지표의 부재, 검색(Retrieval) 단계 고정, 사실 검증과 윤리적 경계, 엔진 간 차이 및 확률적 측정 불확실성**—은 오늘날 후속 연구들이 풀고 있는 핵심 연구 공백(Research Gap)을 정확히 가리키고 있다.

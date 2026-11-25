@@ -1,0 +1,393 @@
+---
+title: "[원문 완역] GEO: Generative Engine Optimization (Aggarwal et al., KDD '24)"
+description: "Pranjal Aggarwal 외(2024)의 ACM SIGKDD 2024 논문 'GEO: Generative Engine Optimization'(arXiv:2311.09735v3)의 초록, 본문(1~10장), 원문 그림(Figure 1–4), 표(Table 1–7), 부록(Appendix A–C) 전체를 빠짐없이 한국어로 완역했습니다."
+category: "paper"
+publishedAt: "2026-11-25"
+tags: ["GEO", "KDD2024", "원문완역", "Aggarwal2024", "논문번역"]
+tldr: "Aggarwal et al. (KDD '24)의 'GEO: Generative Engine Optimization' 원문(arXiv:2311.09735v3) 전체 한국어 완역본입니다."
+keyTakeaways:
+  - "생성형 엔진(GE)은 검색엔진과 다수의 생성 모델을 결합해 출처 기반 종합 답변을 생성하며, 이는 기존 검색 트래픽에 의존하던 콘텐츠 크리에이터에게 새로운 가시성 과제를 제기한다."
+  - "GEO는 비공개·블랙박스 생성형 엔진 환경에서 웹사이트의 표현·문체·근거 구조를 최적화해 인라인 인용 가시성을 최대 40%(Perplexity.ai 최대 37%)까지 높이는 최초의 크리에이터 중심 프레임워크다."
+  - "10,000개 쿼리로 구성된 GEO-bench 평가에서 Quotation Addition, Statistics Addition, Cite Sources, Fluency Optimization이 큰 폭의 가시성 개선을 달성한 반면, 전통 SEO 기법인 Keyword Stuffing은 효과가 없거나 하락했다."
+  - "본 번역문은 arXiv:2311.09735v3 (KDD '24 공식 판본)의 초록, 본문 1~10장, 그림 1–4, 표 1–7, 부록 A–C 및 프롬프트 Listing 1–2를 생략 없이 완역한 자료다."
+source:
+  title: "GEO: Generative Engine Optimization"
+  authors:
+    - "Pranjal Aggarwal"
+    - "Vishvak Murahari"
+    - "Tanmay Rajpurohit"
+    - "Ashwin Kalyan"
+    - "Karthik Narasimhan"
+    - "Ameet Deshpande"
+  year: 2024
+  venueOrPublisher: "Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD '24), Barcelona, Spain"
+  doi: "10.1145/3637528.3671900"
+  url: "https://arxiv.org/abs/2311.09735"
+featured: false
+draft: false
+---
+
+> **번역 안내:** 본 문서는 Pranjal Aggarwal, Vishvak Murahari, Tanmay Rajpurohit, Ashwin Kalyan, Karthik Narasimhan, Ameet Deshpande (2024), *"GEO: Generative Engine Optimization"* ([arXiv:2311.09735v3](https://arxiv.org/abs/2311.09735), [ACM DOI: 10.1145/3637528.3671900](https://doi.org/10.1145/3637528.3671900), KDD '24)의 **원문 전체 한국어 완역본**입니다. 원문의 그림(Figure 1–4), 표(Table 1–7), 부록(Appendix A–C), 프롬프트(Listing 1–2)를 빠짐없이 수록했습니다.
+>
+> - **공식 프로젝트 페이지 (코드·데이터):** [https://generative-engines.com/GEO/](https://generative-engines.com/GEO/) · [GitHub](https://github.com/GEO-optim/GEO)
+> - **쉬운 해설 및 크리틱 버전:** [GEO (KDD '24) 쉬운 해설과 4가지 핵심 크리틱](/geo-kdd-2024-guide-and-critique/)
+
+---
+
+## 초록 (Abstract)
+
+대규모 언어 모델(LLM)의 등장은 사용자 질의에 답하기 위해 생성 모델을 사용하여 정보를 수집하고 요약하는 새로운 검색엔진 패러다임을 열었다. 우리가 **생성형 엔진(Generative Engines, GEs)**이라는 통합 프레임워크로 정식화하는 이 신흥 기술은 정확하고 개인화된 응답을 생성할 수 있으며, Google과 Bing 같은 전통적 검색엔진을 빠르게 대체하고 있다. 생성형 엔진은 일반적으로 여러 출처의 정보를 종합하고 LLM으로 요약함으로써 질의를 충족시킨다. 이러한 전환은 사용자 효용과 생성형 검색엔진 트래픽을 크게 향상시키는 반면, 제3의 이해관계자인 **웹사이트 및 콘텐츠 크리에이터**에게는 거대한 도전을 제기한다. 생성형 엔진의 블랙박스(black-box)적이며 빠르게 변화하는 특성 때문에, 콘텐츠 크리에이터는 자신의 콘텐츠가 언제, 어떻게 표시되는지에 대해 거의 통제권을 갖지 못한다. 생성형 엔진이 정착하는 상황에서 우리는 크리에이터 경제가 불이익을 받지 않도록 보장해야 한다.
+
+이를 해결하기 위해 우리는 콘텐츠 크리에이터가 가시성 지표를 정의하고 최적화할 수 있는 유연한 블랙박스 최적화 프레임워크를 통해 생성형 엔진 응답 내 콘텐츠 가시성을 높이는 최초의 패러다임인 **생성형 엔진 최적화(Generative Engine Optimization, GEO)**를 소개한다. 체계적인 평가를 지원하기 위해, 여러 도메인에 걸친 다양한 사용자 질의와 이에 답하기 위한 관련 웹 출처들로 구성된 대규모 벤치마크 **GEO-bench**를 도입한다. 엄밀한 평가를 통해 우리는 GEO가 생성형 엔진 응답에서 가시성을 **최대 40%**까지 끌어올릴 수 있음을 입증한다. 나아가 이러한 전략들의 효능이 도메인에 따라 달라짐을 보여주며, 도메인 특화 최적화 방법의 필요성을 강조한다. 본 연구는 정보 탐색 시스템의 새로운 지평을 열며, 생성형 엔진 개발자와 콘텐츠 크리에이터 모두에게 깊은 시사점을 제공한다.
+
+---
+
+## 1. 서론 (Introduction)
+
+30년 전 전통적 검색엔진의 발명은 전 세계적인 정보 접근과 유통에 혁명을 일으켰다(Brin & Page, 1998). 전통적 검색엔진은 강력했으며 학술 연구와 전자상거래 같은 수많은 응용 분야를 열었지만, 사용자 질의에 대해 관련 웹사이트 목록을 제공하는 데 그쳤다. 그러나 최근 대규모 언어 모델(Brown et al., 2020; OpenAI, 2024)의 성공은 기존 검색엔진과 생성 모델을 결합한 BingChat, Google의 SGE, perplexity.ai 같은 더 나은 시스템의 길을 열었다. 우리는 이 시스템들이 정보를 검색하고 여러 출처를 활용해 멀티모달 응답을 생성하기 때문에 **생성형 엔진(Generative Engines, GE)**이라 명명한다. 기술적으로 생성형 엔진(Figure 2)은 데이터베이스(예: 인터넷)에서 관련 문서를 검색하고, 대형 신경망 모델을 사용해 출처에 근거한 응답을 생성함으로써 귀속(attribution)과 사용자의 정보 검증 수단을 보장한다.
+
+생성형 엔진이 개발자와 사용자에게 주는 유용성은 명백하다. 사용자는 더 빠르고 정확하게 정보에 접근하고, 개발자는 정밀하고 개인화된 응답을 제작해 사용자 만족도와 수익을 높인다. 그러나 생성형 엔진은 제3의 이해관계자인 웹사이트 및 콘텐츠 크리에이터에게 불이익을 준다. 생성형 엔진은 전통적 검색엔진과 달리 정확하고 포괄적인 응답을 직접 제공함으로써 웹사이트로 이동할 필요성을 없애며, 이는 웹사이트의 유기적 트래픽을 감소시키고 가시성에 타격을 줄 수 있다(Maayan, 2023). 수백만 개의 소기업과 개인이 생계를 온라인 트래픽과 가시성에 의존하는 상황에서, 생성형 엔진은 크리에이터 경제를 크게 뒤흔들 것이다. 더욱이 생성형 엔진의 블랙박스적이고 독점적인 특성 때문에 콘텐츠 크리에이터가 자신의 콘텐츠가 어떻게 수집되고 묘사되는지 통제하고 이해하기가 어렵다.
+
+<figure style="margin: 1.75rem 0; padding: 1rem; background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius);">
+  <img src="/images/geo-kdd-2024/figure-1-geo-overview.png" alt="Figure 1: GEO 프레임워크 개요" style="width: 100%; height: auto; display: block; border-radius: 6px;" />
+  <figcaption style="margin-top: 0.75rem; font-size: 0.88rem; color: var(--text-muted); line-height: 1.55;">
+    <strong>Figure 1:</strong> 우리가 제안하는 생성형 엔진 최적화(GEO) 방법은 생성형 엔진 응답에서 웹사이트의 가시성을 높이도록 웹사이트를 최적화한다. GEO의 블랙박스 최적화 프레임워크는 원래 가시성이 낮았던 피자 웹사이트 소유자가 생성형 엔진 하에서 가시성을 높이도록 웹사이트를 최적화할 수 있게 해준다. 나아가 GEO의 일반 프레임워크는 콘텐츠 크리에이터가 자신만의 맞춤형 가시성 지표를 정의하고 최적화할 수 있게 하여, 이 새로운 패러다임에서 더 큰 통제권을 부여한다.
+  </figcaption>
+</figure>
+
+본 연구에서 우리는 콘텐츠 크리에이터가 이 새로운 검색 패러다임을 헤쳐 나갈 수 있도록 지원하는 최초의 일반 크리에이터 중심 콘텐츠 최적화 프레임워크인 **생성형 엔진 최적화(GEO)**를 제안한다. GEO는 독점적이고 폐쇄형인 생성형 엔진을 대상으로 웹 콘텐츠 가시성을 최적화하는 유연한 블랙박스 최적화 프레임워크다(Figure 1). GEO는 원본 웹사이트를 입력받아 생성형 엔진 내 가시성을 높이도록 표현 방식, 텍스트 스타일, 콘텐츠를 맞춤 조정·보정하여 최적화된 버전을 출력한다.
+
+나아가 생성형 엔진에서의 가시성 개념은 전통적 검색엔진보다 훨씬 미묘하고 다면적이기 때문에(Figure 3), GEO는 생성형 엔진에 특화된 가시성 지표를 정의하는 유연한 프레임워크를 도입한다. 웹사이트의 선형 목록을 제시하는 전통적 검색엔진에서는 응답 페이지의 평균 순위가 가시성의 좋은 척도지만, 이는 생성형 엔진에 적용되지 않는다. 생성형 엔진은 풍부하고 구조화된 응답을 제공하며 웹사이트를 응답 내 인라인 인용(inline citations)으로 삽입하는데, 종종 서로 다른 길이, 다양한 위치, 다양한 스타일로 삽입한다. 따라서 질의에 대한 인용의 관련성 및 영향력 같은 여러 차원에 걸쳐 객관적·주관적 렌즈 모두로 귀속된 출처의 가시성을 측정하는 생성형 엔진 맞춤형 가시성 지표가 필요하다.
+
+GEO 방법의 충실하고 광범위한 평가를 지원하기 위해, 우리는 다양한 도메인과 출처에서 수집해 생성형 엔진에 맞게 재구성한 **10,000개 쿼리**로 이루어진 벤치마크 **GEO-bench**를 제안한다. 체계적인 평가를 통해 우리가 제안한 GEO 방법들이 다양한 쿼리에서 가시성을 최대 40%까지 끌어올릴 수 있음을 입증하여 콘텐츠 크리에이터에게 유익한 전략을 제공한다. 특히 관련 출처의 인용(citations), 직접 인용문(quotations), 통계(statistics)를 포함하면 다양한 쿼리 전반에서 40% 이상의 현저한 출처 가시성 향상을 얻을 수 있음을 발견했다. 또한 실제 상용 생성형 엔진인 **Perplexity.ai**에서도 GEO의 효능을 입증하여 최대 37%의 가시성 향상을 보였다.
+
+요약하면, 본 연구의 기여는 세 가지다:
+1. 웹사이트 소유자가 생성형 엔진에 맞게 웹사이트를 최적화할 수 있는 최초의 일반 최적화 프레임워크인 **GEO**를 제안한다. GEO는 광범위한 쿼리, 도메인, 실제 블랙박스 생성형 엔진에서 웹사이트 가시성을 최대 40%까지 향상시킬 수 있다.
+2. 생성형 엔진 전용으로 설계된 포괄적 가시성 지표 세트를 제안하며, 콘텐츠 크리에이터가 맞춤형 가시성 지표를 통해 콘텐츠를 유연하게 최적화할 수 있게 한다.
+3. 생성형 엔진에서 GEO 방법을 충실히 평가할 수 있도록, 광범위한 도메인과 데이터셋에서 수집해 생성형 엔진에 특화한 최초의 대규모 벤치마크(**GEO-bench**)를 제안한다.
+
+---
+
+## 2. 정식화 및 방법론 (Formulation & Methodology)
+
+### 2.1 생성형 엔진의 정식화 (Formulation of Generative Engines)
+
+수백만 명의 사용자에게 수많은 생성형 엔진이 배포되었음에도 아직 표준 프레임워크는 없다. 우리는 설계상의 다양한 모듈형 구성 요소를 수용하는 정식화를 제공한다. 우리가 기술하는 생성형 엔진은 여러 백엔드 생성 모델과 출처 검색을 위한 검색엔진을 포함한다.
+
+<figure style="margin: 1.75rem 0; padding: 1rem; background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius);">
+  <img src="/images/geo-kdd-2024/figure-2-ge-pipeline.png" alt="Figure 2: 생성형 엔진 개요" style="width: 100%; max-width: 620px; height: auto; display: block; margin: 0 auto; border-radius: 6px;" />
+  <figcaption style="margin-top: 0.75rem; font-size: 0.88rem; color: var(--text-muted); line-height: 1.55;">
+    <strong>Figure 2:</strong> 생성형 엔진 개요. 생성형 엔진은 주로 일련의 생성 모델과 관련 문서를 검색하는 검색엔진으로 구성된다. 생성형 엔진은 사용자 질의를 입력받아 일련의 단계를 거쳐 검색된 출처에 근거하고 인라인 귀속(인용)이 포함된 최종 응답을 생성한다.
+  </figcaption>
+</figure>
+
+생성형 엔진(GE)은 사용자 질의 `q_u`를 입력받아 자연어 응답 `r`을 반환하며, 여기서 `P_U`는 개인화된 사용자 정보를 나타낸다. GE는 다음과 같은 함수로 표현할 수 있다:
+
+- **식 (1):** `f_GE := (q_u, P_U) → r`
+
+생성형 엔진은 두 가지 핵심 구성 요소로 이루어진다: (a) 질의 재작성(query reformulation)이나 요약(summarization) 등 각기 특정 목적을 수행하는 생성 모델 집합 `G = {G₁, G₂, ..., Gₙ}`, (b) 질의 `q`가 주어졌을 때 출처 집합 `S = {s₁, s₂, ..., sₘ}`을 반환하는 검색엔진 `SE`. Figure 2에 제시된 대표 워크플로는 집필 시점의 BingChat 설계와 매우 유사하다. 이 워크플로는 입력 질의를 검색엔진이 처리하기 쉬운 단순한 하위 질의 집합으로 분해한다. 질의가 주어지면 질의 재작성 생성 모델 `G₁ = G_qr`이 질의 집합 `Q₁ = {q₁, q₂, ..., qₙ}`을 생성하고, 이를 검색엔진 `SE`에 전달해 순위가 매겨진 출처 집합 `S = {s₁, s₂, ..., sₘ}`을 검색한다. 출처 집합 `S`는 요약 모델 `G₂ = G_sum`에 전달되어 각 출처의 요약 `Sumⱼ`를 생성함으로써 요약 집합 `Sum = {Sum₁, Sum₂, ..., Sumₘ}`을 만든다. 이 요약 집합은 응답 생성 모델 `G₃ = G_resp`로 전달되어 출처 `S`에 뒷받침된 종합 응답 `r`을 생성한다. 본 연구에서는 단일 턴(single-turn) 생성형 엔진에 초점을 맞추지만, 이 정식화는 다중 턴 대화형 생성형 엔진으로도 확장될 수 있다(Appendix A).
+
+응답 `r`은 일반적으로 인용이 삽입된 구조화 텍스트다. LLM이 정보를 환각(hallucinate)하는 경향을 고려할 때 인용은 매우 중요하다(Ji et al., 2023). 구체적으로 응답 `r`이 문장 `{l₁, l₂, ..., lₒ}`로 구성되어 있다고 하자. 각 문장은 검색된 문서 집합의 부분집합인 인용 집합 `Cᵢ ⊂ S`에 의해 뒷받침될 수 있다. 이상적인 생성형 엔진은 응답의 모든 진술이 관련 인용으로 뒷받침되도록 보장하고(높은 **인용 재현율, citation recall**), 모든 인용이 자신이 연결된 진술을 정확히 뒷받침하도록 보장해야 한다(높은 **인용 정밀도, citation precision**; Liu et al., 2023). 대표적인 생성형 엔진 응답은 Figure 3에 제시되어 있다.
+
+### 2.2 생성형 엔진 최적화 (Generative Engine Optimization)
+
+검색엔진의 등장은 웹사이트 크리에이터가 검색엔진 순위를 높이기 위해 콘텐츠를 최적화하는 과정인 검색엔진 최적화(SEO)를 낳았다. 높은 순위는 높은 가시성과 웹사이트 트래픽으로 이어진다. 그러나 전통적 SEO 기법은 생성형 엔진에 직접 적용되지 않는다. 전통적 검색엔진과 달리 생성형 엔진의 생성 모델은 단순 키워드 매칭에 국한되지 않으며, 언어 모델을 사용해 원본 문서를 수집하고 응답을 생성함으로써 텍스트 문서와 사용자 질의를 훨씬 미묘하게 이해하기 때문이다. 생성형 엔진이 주요 정보 전달 패러다임으로 빠르게 부상하고 SEO가 직접 적용되지 않는 상황에서 새로운 기법이 필요하다. 이에 우리는 콘텐츠 크리에이터가 생성형 엔진 응답 내 자신의 가시성(또는 인상, impression)을 높이는 새로운 패러다임인 **생성형 엔진 최적화(GEO)**를 제안한다. 인용이 포함된 응답 `r`에서 웹사이트(또는 인용) `cᵢ`의 가시성을 함수 `Imp(cᵢ, r)`로 정의하며, 웹사이트 크리에이터는 이를 극대화하고자 한다.
+
+생성형 엔진의 관점에서는 사용자 질의와 가장 관련성이 높은 인용의 가시성을 극대화하는 것, 즉 `Σᵢ f(Imp(cᵢ, r), Rel(cᵢ, q, r))`를 극대화하는 것이 목표다. 여기서 `Rel(cᵢ, q, r)`은 응답 `r`의 맥락에서 질의 `q`에 대한 인용 `cᵢ`의 관련성을 측정하며, `f`는 생성형 엔진의 정확한 알고리즘 설계에 의해 결정되는 최종 사용자 대상 블랙박스 함수다. 나아가 함수 `Imp`와 `Rel` 모두 주관적이며 생성형 엔진에 대해 아직 명확히 정의되지 않았으므로, 다음 절에서 이를 정의한다.
+
+#### 2.2.1 생성형 엔진을 위한 인상 지표 (Impressions for Generative Engines)
+
+SEO에서 웹사이트의 인상(가시성)은 여러 질의에 걸친 평균 순위로 결정된다. 그러나 생성형 엔진의 출력 특성상 다른 인상 지표가 필요하다. 검색엔진과 달리 생성형 엔진은 단일 응답 안에 여러 출처의 정보를 결합한다. 인용된 웹사이트의 길이, 독창성, 표현 방식 같은 요인들이 인용의 진정한 가시성을 결정한다. 따라서 Figure 3에 묘사된 것처럼, 기존 검색엔진에서는 응답 페이지의 단순 순위가 인상과 가시성의 효과적인 척도지만 생성형 엔진 응답에는 적용할 수 없다.
+
+<figure style="margin: 1.75rem 0; padding: 1rem; background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius);">
+  <img src="/images/geo-kdd-2024/figure-3-ranking-vs-visibility.png" alt="Figure 3: 전통 검색엔진과 생성형 엔진의 가시성 비교" style="width: 100%; height: auto; display: block; border-radius: 6px;" />
+  <figcaption style="margin-top: 0.75rem; font-size: 0.88rem; color: var(--text-muted); line-height: 1.55;">
+    <strong>Figure 3:</strong> 원문 내용을 순위대로 나열하는 전통적 검색엔진에서는 랭킹과 가시성 지표가 직관적이다. 그러나 생성형 엔진은 풍부하고 구조화된 응답을 생성하며 종종 인용을 한 블록 안에 서로 뒤섞어 삽입한다. 이는 랭킹과 가시성을 미묘하고 다면적으로 만든다. 나아가 가시성 향상에 대한 연구가 축적된 검색엔진과 달리 생성형 엔진 응답의 가시성 최적화 방법은 불분명하다. 이를 해결하기 위해 우리의 블랙박스 최적화 프레임워크는 크리에이터가 웹사이트 성과를 측정·최적화할 수 있는 잘 설계된 일련의 인상 지표를 제안하고, 크리에이터 스스로 인상 지표를 정의할 수 있게 한다.
+  </figcaption>
+</figure>
+
+이 과제에 대응하기 위해 우리는 세 가지 핵심 원칙을 염두에 두고 일련의 인상 지표를 제안한다: (1) 지표는 크리에이터에게 관련성이 있어야 하고, (2) 설명 가능해야 하며, (3) 광범위한 콘텐츠 크리에이터가 쉽게 이해할 수 있어야 한다. 첫 번째 지표인 **Word Count(단어 수)** 지표는 특정 인용과 관련된 문장들의 정규화된 단어 수다. 수학적으로 다음과 같이 정의된다:
+
+- **식 (2):** `Imp_wc(cᵢ, r) = ( Σ_{s ∈ S_ci} |s| ) / ( Σ_{s ∈ S_r} |s| )`
+
+여기서 `S_ci`는 `cᵢ`를 인용하는 문장 집합이고, `S_r`은 응답 내 전체 문장 집합이며, `|s|`는 문장 `s`의 단어 수다. 한 문장이 여러 출처를 인용하는 경우, 해당 단어 수를 모든 인용 출처에 균등하게 분배한다. 직관적으로 단어 수가 많을수록 해당 출처가 답변에서 더 중요한 역할을 하며, 따라서 사용자가 그 출처에 더 많이 노출된다는 뜻이다.
+
+그러나 "Word Count"는 인용의 순위(예: 처음에 등장하는지 여부)에 영향을 받지 않으므로, 인용 위치에 따라 지수적으로 감쇠하는 함수로 가중치를 줄이는 **Position-Adjusted Word Count(위치 가중 단어 수)**를 제안한다:
+
+- **식 (3):** `Imp_pwc(cᵢ, r) = ( Σ_{s ∈ S_ci} |s| · e^(-pos(s)/|S|) ) / ( Σ_{s ∈ S_r} |s| )`
+
+직관적으로 응답에서 먼저 등장하는 문장이 읽힐 가능성이 더 높으며, `Imp_pwc` 정의의 지수 항은 이러한 인용에 더 높은 가중치를 부여한다. 따라서 상단에 인용된 웹사이트는 중간이나 끝에 인용된 웹사이트보다 단어 수가 적더라도 더 높은 인상 점수를 받을 수 있다. 지수 감쇠 함수를 선택한 것은 검색엔진에서 클릭률(CTR)이 순위의 멱법칙(power-law) 함수를 따른다는 여러 연구(Dean, 2023; Goodwin, 2011)에 근거한다.
+
+위 인상 지표들은 객관적이고 타당하지만, 인용이 사용자 주의에 미치는 주관적 측면은 반영하지 못한다. 이를 보완하기 위해 우리는 **Subjective Impression(주관적 인상)** 지표를 제안한다. 여기에는 ① 사용자 질의에 대한 인용 자료의 관련성(relevance), ② 인용의 영향력(influence), ③ 인용이 제시한 자료의 독창성(uniqueness), ④ 주관적 위치(subjective position), ⑤ 주관적 분량(subjective count), ⑥ 인용을 클릭할 확률(FollowUp), ⑦ 제시된 자료의 다양성(diversity)이 포함된다. 각 하위 지표를 측정하기 위해 LLM 기반 평가의 최신 표준인 **G-Eval**(Liu et al., 2023)을 사용한다.
+
+#### 2.2.2 웹사이트를 위한 생성형 엔진 최적화 방법 (GEO methods for website)
+
+인상 지표를 개선하려면 콘텐츠 크리에이터가 웹사이트 콘텐츠를 수정해야 한다. 우리는 생성형 엔진에 구애받지 않는(engine-agnostic) 여러 전략인 **GEO 방법**을 제시한다. 수학적으로 모든 GEO 방법은 함수 `f: W → W'ᵢ`로 표현되며, `W`는 초기 웹 콘텐츠, `W'`는 GEO 방법 적용 후 수정된 콘텐츠다. 수정은 단순한 문체 변경부터 구조화된 형식의 새 콘텐츠 통합까지 다양하다. 잘 설계된 GEO는 생성형 엔진의 정확한 알고리즘 설계를 알지 못한 채, 특정 질의에 의존하지 않고 `W`에 텍스트 수정을 가해 웹사이트 가시성을 높이는 블랙박스 최적화 방법과 동등하다.
+
+실험에서는 LLM에 특정 문체 및 콘텐츠 변경을 수행하도록 프롬프트를 주어 웹사이트 콘텐츠에 GEO 방법을 적용했다. 우리가 제안하고 평가하는 9가지 방법은 다음과 같다:
+1. **Authoritative (권위적 어조):** 원본 콘텐츠의 텍스트 스타일을 더 설득력 있고 권위적으로 수정한다.
+2. **Statistics Addition (통계 추가):** 가능한 곳마다 정성적 논의 대신 정량적 통계를 포함하도록 콘텐츠를 수정한다.
+3. **Keyword Stuffing (키워드 스터핑):** 고전적 SEO 최적화에서 기대되는 것처럼 질의의 키워드를 콘텐츠에 더 많이 포함시킨다.
+4. **Cite Sources (출처 인용):** 신뢰할 수 있는 출처의 관련 인용(citations)을 추가한다.
+5. **Quotation Addition (인용문 추가):** 신뢰할 수 있는 출처의 직접 인용문(quotations)을 추가한다.
+6. **Easy-to-Understand (이해하기 쉽게):** 웹사이트의 언어를 단순화한다.
+7. **Fluency Optimization (유창성 최적화):** 웹사이트 텍스트의 유창성(흐름·가독성)을 개선한다.
+8. **Unique Words (고유 어휘):** 가능한 곳에 고유하고 참신한 어휘를 추가한다.
+9. **Technical Terms (전문 용어):** 가능한 곳에 전문 용어를 추가한다.
+
+이 방법들은 웹사이트 소유자가 콘텐츠 내용과 무관하게 신속히 구현할 수 있는 다양한 일반 전략을 포괄한다. 또한 방법 3, 4, 5를 제외한 나머지 방법들은 추가 콘텐츠 없이 기존 콘텐츠의 표현을 개선해 생성형 엔진에 대한 설득력이나 매력을 높이는 반면, 방법 3, 4, 5는 일정 형태의 추가 콘텐츠를 필요로 할 수 있다. 각 방법의 성능 향상을 분석하기 위해, 각 입력 질의에 대해 최적화할 원본 웹사이트 1개를 무작위로 선택하고 동일한 원본에 각 GEO 방법을 개별 적용했다.
+
+---
+
+## 3. 실험 설정 (Experimental Setup)
+
+### 3.1 평가 생성형 엔진 (Evaluated Generative Engine)
+
+선행 연구(Liu et al., 2023)에 따라 생성형 엔진 설계에 2단계 설정을 사용한다. 첫 번째 단계는 입력 질의에 대해 관련 출처를 가져오는 것이고, 두 번째 단계는 가져온 출처를 바탕으로 LLM이 응답을 생성하는 것이다. 선행 연구와 마찬가지로 요약을 생략하고 각 출처의 전체 텍스트를 제공한다. 컨텍스트 길이 제한과 트랜스포머 모델의 컨텍스트 크기에 따른 이차적(quadratic) 비용 증가 때문에, 각 질의마다 Google 검색엔진에서 **상위 5개 출처**만 가져온다. 이 설정은 선행 연구 및 you.com, perplexity.ai 같은 상용 GE의 일반 설계를 밀접하게 모방한다. 답변은 선행 연구와 동일한 프롬프트(Listing 1)를 사용해 **`gpt-3.5-turbo`** 모델로 생성한다. 통계적 편차를 줄이기 위해 `temperature = 0.7`에서 5개의 서로 다른 응답을 샘플링한다. 나아가 Section 6 및 Appendix C.1에서는 상용 배포된 생성형 엔진인 **Perplexity.ai**에서도 동일한 GEO 방법을 평가하여 일반화 가능성을 강조한다.
+
+### 3.2 벤치마크: GEO-bench
+
+생성형 엔진 관련 질의를 담은 공개 데이터셋이 없으므로, 여러 출처의 질의를 생성형 엔진용으로 재구성하고 합성 질의를 추가한 **10,000개 쿼리** 벤치마크 **GEO-bench**를 구축했다. 이 벤치마크는 9개 출처의 질의를 포함하며, 각 질의는 대상 도메인, 난이도, 질의 의도 등 여러 차원으로 분류된다.
+
+- **데이터셋 (9개 출처):**
+  1. **MS MARCO**, 2. **ORCAS-1**, 3. **Natural Questions**: Bing과 Google 검색엔진의 실제 익명 사용자 질의. 기존 검색 연구의 표준이지만 생성형 엔진은 단순 검색이 아니라 다중 출처 종합을 요구하는 훨씬 어렵고 구체적인 질의를 받게 되므로 아래 공개 데이터셋을 재구성했다.
+  4. **AllSouls**: 옥스퍼드 대학교 올소울즈 칼리지의 에세이 질문. 다중 출처 정보 통합과 추론을 요구한다.
+  5. **LIMA**: 정보 통합뿐 아니라 추론(예: 짧은 시, 파이썬 코드 작성)을 요구하는 고난도 질문.
+  6. **Davinci-Debate**: 생성형 엔진 테스트용으로 생성된 논쟁형 질문.
+  7. **Perplexity.ai Discover**: Perplexity.ai의 Discover 섹션에서 수집한 트렌딩 질의.
+  8. **ELI-5**: 복잡한 질문을 일반인이 이해하기 쉬운 말로 설명해 달라는 ELI5 서브레딧 질문.
+  9. **GPT-4 Generated Queries**: 질의 분포의 다양성을 보완하기 위해 도메인(과학, 역사 등), 의도(탐색형, 거래형 등), 난이도 및 응답 범위(개방형, 사실 기반 등)에 따라 GPT-4로 생성한 질의.
+
+벤치마크는 총 10,000개 쿼리를 **학습 8,000 / 검증 1,000 / 테스트 1,000**으로 분할했다. 실제 세계의 질의 분포를 보존하여 **정보형(informational) 80%, 거래형(transactional) 10%, 탐색형(navigational) 10%**로 구성했다. 각 질의에는 Google 검색 상위 5개 결과의 정제된 텍스트가 보강되어 있다.
+
+- **태그(Tags):** 각 질의를 GPT-4를 사용해 7가지 분류 차원으로 태깅하고 테스트셋에서 높은 재현율과 정밀도를 수작업 검증했다. 전체적으로 GEO-bench는 예술·건강·게임 등 **25개 도메인**, 단순~다면적 난이도, 9개 질의 유형, 7개 분류 체계를 포괄한다.
+
+### 3.3 GEO 방법 및 3.4 평가 지표
+
+Section 2.2.2의 9가지 GEO 방법을 GEO-bench 테스트셋 전체에서 무최적화 기준선(baseline)과 비교 평가했다. 결과 분산을 줄이기 위해 **5개의 서로 다른 랜덤 시드**로 실험해 평균을 보고한다.
+
+평가 지표는 Section 2.2.1의 두 가지 인상 지표를 사용한다:
+1. **Position-Adjusted Word Count:** 단어 수(Word)와 위치(Position)를 결합한 지표이며, 두 하위 지표도 개별 보고한다.
+2. **Subjective Impression:** 7개 측면(관련성, 영향력, 독창성, 주관적 위치, 주관적 분량, 클릭 가능성, 다양성)을 GPT-3.5 기반 G-Eval 템플릿으로 다중 샘플링 채점한 뒤, 공정한 비교를 위해 Position-Adjusted Word Count와 동일한 평균과 분산을 갖도록 정규화했다.
+
+모든 인상 지표는 한 응답 내 모든 인용의 인상 합이 1이 되도록 정규화한다. 초기 응답 `r`과 한 출처 `sᵢ`에 GEO를 적용한 수정 응답 `r'` 사이의 상대적 인상 개선율은 다음과 같이 계산한다:
+
+- **식 (4):** `Improvement_si = ( (Imp_si(r') − Imp_si(r)) / Imp_si(r) ) × 100`
+
+---
+
+## 4. 실험 결과 (Results)
+
+Table 1은 GEO-bench 테스트셋 전체에 대한 다양한 방법의 절대 인상 지표를 보여준다.
+
+#### Table 1: GEO-bench에서 GEO 방법들의 절대 인상 지표 (원문 p.6)
+
+| Method | Word | Position | **Overall** | Rel. | Infl. | Unique | Div. | FollowUp | Pos. | Count | **Average** |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| *Performance without GEO* | | | | | | | | | | | |
+| **No Optimization** | 19.5 | 19.3 | **19.3** | 19.3 | 19.3 | 19.3 | 19.3 | 19.3 | 19.3 | 19.3 | **19.3** |
+| *Non-Performing GEO methods* | | | | | | | | | | | |
+| **Keyword Stuffing** | 17.8 | 17.7 | **17.7** | 19.8 | 19.1 | 20.5 | 20.4 | 20.3 | 20.5 | 20.4 | **20.2** |
+| **Unique Words** | 20.7 | 20.5 | **20.5** | 20.5 | 20.1 | 19.9 | 20.4 | 20.2 | 20.7 | 20.2 | **20.4** |
+| *High-Performing GEO methods* | | | | | | | | | | | |
+| **Easy-to-Understand** | 22.2 | 22.4 | **22.0** | 20.2 | 21.0 | 20.0 | 20.1 | 20.1 | 20.9 | 19.9 | **20.5** |
+| **Authoritative** | 21.8 | 21.3 | **21.3** | 22.3 | 22.1 | 22.4 | 23.1 | 22.2 | 23.1 | 22.7 | **22.9** |
+| **Technical Terms** | 23.1 | 22.7 | **22.7** | 20.9 | 21.7 | 20.5 | 21.2 | 20.8 | 21.9 | 20.8 | **21.4** |
+| **Fluency Optimization** | 25.1 | 24.6 | **24.7** | 21.1 | 22.9 | 20.4 | 21.6 | 21.0 | 22.4 | 21.1 | **21.9** |
+| **Cite Sources** | 24.9 | 24.5 | **24.6** | 21.4 | 22.5 | 21.0 | 21.6 | 21.2 | 22.2 | 20.7 | **21.9** |
+| **Quotation Addition** | 27.8 | 27.3 | **27.2** | 23.8 | 25.4 | 23.9 | 24.4 | 22.9 | 24.9 | 23.2 | **24.7** |
+| **Statistics Addition** | 25.9 | 25.4 | **25.2** | 22.5 | 24.5 | 23.0 | 23.3 | 21.6 | 24.2 | 23.0 | **23.7** |
+
+*주: 최고 성능 방법들은 Position-Adjusted Word Count에서 기준선 대비 41%, Subjective Impression에서 28% 개선을 달성했다. 가독성을 위해 Subjective Impression 점수는 Position-Adjusted Word Count 기준으로 정규화되었다.*
+
+결과는 우리의 GEO 방법들이 GEO-bench의 모든 지표에서 기준선을 일관되게 능가함을 보여준다. 특히 최상위 방법인 **Cite Sources, Quotation Addition, Statistics Addition**은 Position-Adjusted Word Count에서 **30~40%**, Subjective Impression에서 **15~30%**의 상대적 개선을 달성했다. 이 방법들은 최소한의 수정만으로 콘텐츠의 신뢰도와 풍부함을 높여 GE 응답 내 가시성을 크게 끌어올린다. 흥미롭게도 원본 텍스트의 유창성과 가독성을 높이는 문체적 변화(**Fluency Optimization**과 **Easy-to-Understand**) 역시 **15~30%**의 유의미한 가시성 상승을 가져왔다. 이는 생성형 엔진이 내용뿐 아니라 정보의 표현 방식도 중시함을 시사한다.
+
+반면, 생성 모델이 지시를 따르도록 설계되었기에 더 설득력 있고 권위적인 어조(`Authoritative`)가 가시성을 크게 높일 것이라는 예상과 달리 유의미한 큰 개선은 나타나지 않았으며, 이는 생성형 엔진이 그러한 어조 변화에 어느 정도 견고함(robust)을 보여준다. 마지막으로 전통적 SEO에서 널리 쓰이는 **Keyword Stuffing**은 생성형 엔진 응답에서 거의 개선을 주지 못하거나 오히려 하락했다. 이는 검색엔진에서 효과적인 기법이 새 패러다임으로 그대로 이어지지 않음을 강조한다.
+
+---
+
+## 5. 심층 분석 (Analysis)
+
+### 5.1 도메인 특화 생성형 엔진 최적화 (Domain-Specific GEO)
+
+실제 SEO 시나리오에서는 도메인별 맞춤 최적화가 적용된다. GEO-bench의 각 질의에 부여된 카테고리를 바탕으로 각 GEO 기법이 가장 효과적이었던 상위 3개 카테고리를 분석한 결과가 Table 3이다.
+
+#### Table 3: 각 GEO 방법별 최우수 성과 카테고리 (원문 p.7)
+
+| Method | Rank-1 | Rank-2 | Rank-3 |
+| :--- | :---: | :---: | :---: |
+| **Authoritative** | Debate | History | Science |
+| **Fluency Opt.** | Business | Science | Health |
+| **Cite Sources** | Statement | Facts | Law & Gov. |
+| **Quotation Addition** | People & Society | Explanation | History |
+| **Statistics Addition** | Law & Gov. | Debate | Opinion |
+
+예를 들어 **Authoritative**는 논쟁(Debate)형 질문과 역사(History) 도메인에서 성능을 크게 높였는데, 설득력 있는 글쓰기가 논쟁에서 더 높은 가치를 갖기 때문이다. **Cite Sources**는 사실(Facts) 검증이 중요한 질문에서 특히 유리했다. **Statistics Addition**은 법률·정부(Law & Gov.) 도메인이나 의견(Opinion)·논쟁 질문에서 데이터 기반 근거를 제공해 큰 효과를 냈다. **Quotation Addition**은 개인 서사나 역사적 사건이 자주 등장하는 인물·사회(People & Society), 설명(Explanation), 역사 도메인에서 직접 인용이 진정성과 깊이를 더해 가장 효과적이었다.
+
+### 5.2 다수 웹사이트의 동시 최적화 (Optimization of Multiple Websites)
+
+GEO가 널리 보급되면 **모든 출처 콘텐츠가 동시에 GEO로 최적화되는 시나리오**가 현실화된다. 이를 파악하기 위해 모든 후보 출처를 동시에 최적화한 결과가 Table 2다.
+
+#### Table 2: 검색엔진 순위별 출처의 GEO 적용 시 상대적 가시성 변화(%) (원문 p.7)
+
+| Method | Rank-1 | Rank-2 | Rank-3 | Rank-4 | Rank-5 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Authoritative** | -6.0 | 4.1 | -0.6 | 12.6 | 6.1 |
+| **Fluency Opt.** | -2.0 | 5.2 | 3.6 | -4.4 | 2.2 |
+| **Cite Sources** | -30.3 | 2.5 | 20.4 | 15.5 | **115.1** |
+| **Quotation Addition** | -22.9 | -7.0 | 3.5 | 25.1 | **99.7** |
+| **Statistics Addition** | -20.6 | -3.9 | 8.1 | 10.0 | **97.9** |
+
+핵심 발견은 검색 결과 페이지(SERP) 순위에 따른 차별적 영향이다. 전통적으로 가시성 확보에 어려움을 겪는 **하위 순위 웹사이트가 GEO로부터 압도적으로 더 큰 혜택**을 얻었다. 전통적 검색엔진은 소규모 크리에이터가 확보하기 어려운 백링크 수와 도메인 권위에 크게 의존하지만, 생성형 엔진은 웹사이트 본문 텍스트에 조건화된 생성 모델을 사용하기 때문이다. 예를 들어 `Cite Sources`는 SERP 5위 웹사이트의 가시성을 **+115.1%** 끌어올린 반면, 1위 웹사이트의 가시성은 평균 **-30.3%** 감소했다. 이 발견은 GEO가 중소 크리에이터와 독립 비즈니스가 대기업과 더 공정하게 경쟁하도록 돕는 **디지털 공간 민주화** 도구로 기능할 잠재력을 보여준다.
+
+### 5.3 GEO 전략의 조합 (Combination of GEO Strategies)
+
+실제 웹사이트 소유자는 여러 전략을 함께 사용할 것이다. 상위 4개 전략(`Cite Sources`, `Fluency Optimization`, `Statistics Addition`, `Quotation Addition`)의 모든 쌍 조합을 테스트셋 200개 서브셋(비용 제약으로 인해 200개 샘플 사용)에서 평가한 결과가 Figure 4다.
+
+<figure style="margin: 1.75rem 0; padding: 1rem; background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius);">
+  <img src="/images/geo-kdd-2024/figure-4-combination-heatmap.png" alt="Figure 4: GEO 전략 조합 상대적 개선율 히트맵" style="width: 100%; max-width: 580px; height: auto; display: block; margin: 0 auto; border-radius: 6px;" />
+  <figcaption style="margin-top: 0.75rem; font-size: 0.88rem; color: var(--text-muted); line-height: 1.55;">
+    <strong>Figure 4 (원문 p.7):</strong> GEO 전략 조합 사용 시 Position-Adjusted Word Count 상대적 개선율. Fluency Optimization과 Statistics Addition을 함께 사용할 때 최고 성능(35.8%)을 기록한다. 가장 오른쪽 열은 다른 전략들과 결합했을 때의 평균 개선율을 보여준다.
+  </figcaption>
+</figure>
+
+가장 우수한 조합(**Fluency Optimization + Statistics Addition**, 35.8%)은 어떤 단일 GEO 전략보다도 **5.5%p 이상** 높은 성능을 냈다. 나아가 단독 사용 시 Quotation Addition보다 8% 낮았던 `Cite Sources`도 다른 방법과 결합할 때 성능을 크게 끌어올렸다.
+
+### 5.4 정성적 분석 (Qualitative Analysis)
+
+Table 4는 실질적인 새 정보를 크게 덧붙이지 않고 최소한의 텍스트 추가·삭제만으로 출처 가시성을 크게 높인 대표 사례를 보여준다.
+
+#### Table 4: 원본 웹사이트를 최적화한 GEO 대표 사례 (원문 p.8)
+
+| Method | GEO Optimization (추가된 부분 굵게 표시) | Relative Improvement |
+| :--- | :--- | :---: |
+| **Cite Sources** | *Query: What is the secret of Swiss chocolate*<br />With per capita annual consumption averaging between 11 and 12 kilos, Swiss people rank among the top chocolate lovers in the world **(According to a survey conducted by The International Chocolate Consumption Research Group [1])** | **132.4%** |
+| **Statistics Addition** | *Query: Should robots replace humans in the workforce?*<br />Not here, and not now — until recently. The big difference is that the robots have come not to destroy our lives, but to disrupt our work, **with a staggering 70% increase in robotic involvement in the last decade.** | **65.5%** |
+| **Authoritative** | *Query: Did the jacksonville jaguars ever make it to the superbowl?*<br />**It is important to note that** The Jaguars have never **appeared** *(삭제: made an appearance)* in the Super Bowl. However, They have achieved an impressive feat by securing 4 divisional titles to their name, **a testament to their prowess and determination.** | **89.1%** |
+
+---
+
+## 6. 실전 GEO: 상용 배포된 생성형 엔진(Perplexity.ai) 실험
+
+제안한 GEO 방법의 효능을 강화하기 위해, 대규모 사용자 기반을 보유한 실제 상용 생성형 엔진인 **Perplexity.ai**에서 평가했다(Table 5 및 Appendix C.1의 Table 7).
+
+#### Table 5: Perplexity.ai를 GE로 사용한 GEO-bench 절대 인상 지표 요약 (원문 p.8)
+
+| Method | Position-Adjusted Word Count | Subjective Impression |
+| :--- | :---: | :---: |
+| **No Optimization** | 24.1 | 24.7 |
+| **Keyword Stuffing** | 21.9 | 28.1 |
+| **Quotation Addition** | **29.1** | 32.1 |
+| **Statistics Addition** | 26.2 | **33.9** |
+
+자체 생성형 엔진과 유사하게 **Quotation Addition**이 Position-Adjusted Word Count에서 기준선 대비 22% 개선으로 최고 성능을 보였고, Cite Sources와 Statistics Addition도 두 지표에서 각각 최대 9%, 37% 개선을 보였다. 반면 전통적 SEO 기법인 **Keyword Stuffing**은 기준선보다 10% 더 나쁜 성능을 기록해 무효성이 재확인되었다. 이 결과는 (1) 크리에이터를 위한 다양한 GEO 방법 개발의 중요성, (2) 서로 다른 생성형 엔진에 걸친 GEO의 일반화 가능성, (3) 크리에이터가 쉽게 구현해 실질적 효과를 얻을 수 있음을 입증한다.
+
+---
+
+## 7. 관련 연구 (Related Work)
+
+- **증거 기반 답변 생성 (Evidence-based Answer Generation):** WebGPT(Nakano et al., 2021), Menick et al.(2022), BlenderBot 3(Shuster et al., 2022), LaMDA(Thoppilan et al., 2022) 등은 검색엔진을 통해 출처 기반 답변을 생성했다. 최근 초고에서 Kumar & Lakkaraju(2024)는 전략적 텍스트 시퀀스로 LLM 추천을 조작해 상품 가시성을 높일 수 있음을 보였으나, 그들의 접근이 적대적(adversarial) 텍스트에 초점을 맞춘 반면 우리의 방법은 어떤 웹사이트 콘텐츠든 가시성을 높이는 **비적대적(non-adversarial)** 전략을 제안한다.
+- **검색 증강 언어 모델 (Retrieval-Augmented Language Models):** REALM(Guu et al., 2020), DPR(Asai et al., 2021), Mialon et al.(2023) 등이 언어 모델의 제한된 메모리 문제를 다뤘으나, 생성형 엔진은 답변 전반에 귀속(인용)을 제공하고 멀티모달·질의 재작성·출처 선택을 아우른다는 점에서 다르다.
+- **검색엔진 최적화 (Search Engine Optimization):** 지난 25년간 On-Page SEO와 Off-Page SEO가 연구되었으나, GEO는 단순 키워드 매칭이 아닌 멀티모달·대화형 생성 모델 환경에 대응한다는 점에서 전통적 SEO 전략이 그대로 통하지 않는다.
+
+---
+
+## 8. 결론 (Conclusion)
+
+본 연구에서는 생성 모델로 증강된 검색엔진을 생성형 엔진(GE)으로 정식화하고, 콘텐츠 크리에이터가 생성형 엔진 하에서 콘텐츠를 최적화할 수 있도록 **GEO**를 제안했다. 생성형 엔진용 인상 지표를 정의하고, 다양한 도메인과 설정의 사용자 질의 및 관련 출처를 담은 **GEO-bench**를 공개했다. 제안한 GEO 방법들이 생성형 엔진 응답에서 출처 가시성을 최대 40%까지 높일 수 있으며, 특히 인용·직접 인용문·통계 추가가 큰 효과를 낸다는 점을 입증했다. 나아가 쿼리 도메인에 따른 전략 의존성과 복수 전략 조합의 잠재력, 수백만 활성 사용자를 보유한 상용 생성형 엔진(Perplexity.ai)에서의 실효성을 보였다.
+
+---
+
+## 9. 한계 (Limitations)
+
+공개 상용 엔진을 포함해 두 개의 생성형 엔진에서 엄밀히 테스트했으나, SEO가 진화해 온 것처럼 GE가 진화함에 따라 GEO 방법도 시간에 따라 적응해야 한다. 또한 GEO-bench가 실제 쿼리를 모방하도록 노력했으나 쿼리 성격이 변하므로 지속적 업데이트가 필요하다. 나아가 검색엔진 알고리즘의 블랙박스 특성 때문에 **GEO 방법이 기존 검색엔진 순위(SEO)에 미치는 영향은 평가하지 못했다.** 다만 GEO의 변경은 도메인명·백링크 같은 메타데이터에 영향을 주지 않는 텍스트 수준의 표적 수정이므로 기존 검색 순위를 해칠 가능성은 낮으며, 향후 LLM의 컨텍스트 길이가 더 경제적으로 길어져 더 많은 출처를 수용하게 되면 검색 순위의 영향력은 점차 줄어들 것으로 예상된다. 마지막으로 GEO-bench의 모든 쿼리를 태깅하고 수작업 점검했으나, 주관적 해석이나 라벨링 오류에 따른 불일치가 존재할 수 있다.
+
+---
+
+## 10. 감사의 글 (Acknowledgements)
+
+본 연구는 미국 국립과학재단(National Science Foundation) Grant No. 2107048의 지원을 받아 수행되었다.
+
+---
+
+## 부록 (Appendix)
+
+### Appendix A: 대화형 생성형 엔진 (Conversational Generative Engine)
+
+Section 2.1에서는 단일 질의 `q_u`에 단일 응답을 출력하는 단일 턴 생성형 엔진을 다루었다. 향후 생성형 엔진의 핵심 강점은 사용자와의 능동적인 다중 턴 대화다. 식 (1)에서 단일 질의 `q_u` 대신 대화 이력 `H = (q_u^t, r^t)` 쌍으로 모델링하면 턴 `t`에서의 다음 응답 `r^(t+1)`은 다음과 같이 정의된다:
+
+- **식 (5):** `GE := f_LE(H, P_U) → r^(t+1)`
+
+나아가 대화를 이어가기 위해 별도 LLM(`L_follow` 또는 `L_resp`)이 `H`, `P_U`, `r^(t+1)`을 바탕으로 추천 후속 질문(suggested follow-up queries)을 생성하여 사용자 참여와 웹사이트 소유자의 가시성을 함께 높일 수 있다.
+
+### Appendix B: 실험 설정 상세 — Listing 1 & Listing 2
+
+#### Listing 1: 생성형 엔진에 사용된 프롬프트 원문 (원문 p.11)
+
+```text
+Write an accurate and concise answer for the given user question,
+using _only_ the provided summarized web search results.
+The answer should be correct, high-quality, and written by
+an expert using an unbiased and journalistic tone. The user's
+language of choice such as English, Francais, Espanol,
+Deutsch, or should be used. The answer should be
+informative, interesting, and engaging. The answer's logic
+and reasoning should be rigorous and defensible. Every
+sentence in the answer should be _immediately followed_ by
+an in-line citation to the search result(s). The cited
+search result(s) should fully support _all_ the information
+in the sentence. Search results need to be cited using [index].
+When citing several search results, use [1][2][3] format rather
+than [1, 2, 3]. You can use multiple search results to respond
+comprehensively while avoiding irrelevant search results.
+
+Question: {query}
+
+Search Results:
+{source_text}
+```
+
+#### Listing 2: GEO-bench 9개 데이터셋별 대표 쿼리 및 7개 태깅 차원 (원문 p.11)
+
+- **ORCAS:** `what does globalization mean`, `wine pairing list`
+- **AllSouls:** `Are open-access journals the future of academic publishing?`, `Should the study of non-Western philosophy be a requirement for a philosophy degree in the UK?`
+- **Davinci-Debate:** `Should all citizens receive a basic income?`, `Should governments promote atheism?`
+- **ELI5:** `Why does my cat kick its toys when playing with them?`, `what does caffeine actually do your muscles, especially regarding exercising?`
+- **GPT-4:** `What are the benefits of a keto diet?`, `What are the most profound impacts of the Renaissance period on modern society?`
+- **LIMA:** `What are the primary factors that influence consumer behavior?`, `What would be a great twist for a murder mystery?...`
+- **MS-MARCO:** `what does monogamous`, `what is the normal fbs range for children`
+- **Natural Questions:** `where does the phrase bee line come from`, `what is the prince of persia in the bible`
+- **Perplexity.ai:** `how to gain more followers on LinkedIn`, `why is blood sugar higher after a meal`
+- **7개 태깅 차원:** Difficulty Level(난이도), Nature of Query(질의 성격), Genre(장르), Specific Topics(세부 주제), Sensitivity(민감도), User Intent(사용자 의도), Answer Type(답변 유형).
+
+### Appendix C: 추가 실험 결과 (Table 6 & Table 7)
+
+#### Table 6: 5개 랜덤 시드 기반 GEO-bench 절대 인상 지표 및 표준편차 (원문 p.12)
+
+| Method | Word | Pos. | **Overall** | Rel. | Infl. | Unique | Div. | FollowUp | Subj. Pos. | Subj. Count | **Average** |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **No Optimization** | 19.7(±0.7) | 19.6(±0.5) | **19.8(±0.6)** | 19.8(±0.9) | 19.8(±1.6) | 19.8(±0.6) | 19.8(±1.1) | 19.8(±1.0) | 19.8(±1.0) | 19.8(±0.9) | **19.8(±0.9)** |
+| **Keyword Stuffing** | 19.6(±0.5) | 19.5(±0.6) | **19.8(±0.5)** | 20.8(±0.8) | 19.8(±1.0) | 20.4(±0.5) | 20.6(±0.9) | 19.9(±0.9) | 21.1(±1.0) | 21.0(±0.9) | **20.6(±0.7)** |
+| **Unique Words** | 20.6(±0.6) | 20.5(±0.7) | **20.7(±0.5)** | 20.8(±0.7) | 20.3(±1.3) | 20.5(±0.3) | 20.9(±0.3) | 20.4(±0.7) | 21.5(±0.6) | 21.2(±0.4) | **20.9(±0.4)** |
+| **Easy-to-Understand** | 21.5(±0.7) | 22.0(±0.8) | **21.5(±0.6)** | 21.0(±1.1) | 21.1(±1.8) | 21.2(±0.9) | 20.9(±1.1) | 20.6(±1.0) | 21.9(±1.1) | 21.4(±0.9) | **21.3(±1.0)** |
+| **Authoritative** | 21.3(±0.7) | 21.2(±0.9) | **21.1(±0.8)** | 22.3(±0.8) | 22.9(±0.8) | 22.1(±0.9) | 23.2(±0.7) | 21.9(±0.4) | 23.9(±1.2) | 23.0(±1.1) | **23.1(±0.7)** |
+| **Technical Terms** | 22.5(±0.6) | 22.4(±0.6) | **22.5(±0.6)** | 21.2(±0.7) | 21.8(±0.8) | 20.5(±0.5) | 21.1(±0.6) | 20.5(±0.6) | 22.1(±0.6) | 21.2(±0.2) | **21.4(±0.4)** |
+| **Fluency Opt.** | 24.4(±0.8) | 24.4(±0.6) | **24.4(±0.8)** | 21.3(±0.9) | 23.2(±1.5) | 21.2(±1.0) | 21.4(±1.4) | 20.8(±1.3) | 23.2(±1.8) | 21.5(±1.3) | **22.1(±1.2)** |
+| **Cite Sources** | 25.5(±0.7) | 25.3(±0.6) | **25.3(±0.6)** | 22.8(±0.9) | 24.2(±0.7) | 21.7(±0.3) | 22.3(±0.8) | 21.3(±0.9) | 23.5(±0.4) | 21.7(±0.6) | **22.9(±0.5)** |
+| **Quotation Addition** | 27.5(±0.8) | 27.6(±0.8) | **27.1(±0.6)** | 24.4(±1.0) | 26.7(±1.1) | 24.6(±0.7) | 24.9(±0.9) | 23.2(±0.9) | 26.4(±1.0) | 24.1(±1.2) | **25.5(±0.9)** |
+| **Statistics Addition** | 25.8(±1.2) | 26.0(±0.8) | **25.5(±1.2)** | 23.1(±1.4) | 26.1(±0.9) | 23.6(±0.9) | 24.5(±1.2) | 22.4(±1.2) | 26.1(±1.2) | 23.8(±1.2) | **24.8(±1.1)** |
+
+#### Table 7: Perplexity.ai(200개 테스트 샘플, 파일 업로드 방식) 전체 세부 지표 결과 (원문 p.12)
+
+Perplexity.ai는 사용자가 출처 URL을 직접 지정할 수 없으므로, 원본 텍스트를 파일 업로드로 제공하고 업로드된 파일 출처만을 사용해 모든 답변이 생성되도록 보장했다.
+
+| Method | Word | Pos. | **Overall** | Rel. | Infl. | Unique | Div. | FollowUp | Subj. Pos. | Subj. Count | **Average** |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **No Optimization** | 24.0 | 24.4 | **24.1** | 24.7 | 24.7 | 24.7 | 24.7 | 24.7 | 24.7 | 24.7 | **24.7** |
+| **Keyword Stuffing** | 21.9 | 21.4 | **21.9** | 26.3 | 27.2 | 27.2 | 30.2 | 27.9 | 28.2 | 26.9 | **28.1** |
+| **Unique Words** | 24.0 | 23.7 | **23.6** | 24.9 | 25.1 | 24.7 | 24.4 | 23.0 | 23.6 | 23.9 | **24.1** |
+| **Authoritative** | 25.6 | 25.7 | **25.9** | 28.9 | 30.9 | 31.2 | 31.7 | 31.5 | 26.9 | 29.5 | **30.6** |
+| **Fluency Opt.** | 25.8 | 26.2 | **26.0** | 28.9 | 29.4 | 29.8 | 30.6 | 30.1 | 29.6 | 29.6 | **30.0** |
+| **Cite Sources** | 26.6 | 26.9 | **26.8** | 19.8 | 20.7 | 19.5 | 18.9 | 20.0 | 18.5 | 18.9 | **19.0** |
+| **Quotation Addition** | 28.8 | 28.7 | **29.1** | 31.4 | 31.9 | 31.9 | 32.3 | 31.4 | 31.7 | 30.9 | **32.1** |
+| **Statistics Addition** | 25.8 | 26.6 | **26.2** | 31.6 | 33.4 | 34.0 | 33.7 | 34.0 | 33.3 | 33.1 | **33.9** |
